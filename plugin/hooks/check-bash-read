@@ -1,0 +1,46 @@
+#!/bin/bash
+# PreToolUse hook for Bash: Blocks commands like 'cat large_file'
+MIN_LINES="${SHUNT_MIN_LINES:-350}"
+case "$MIN_LINES" in ''|*[!0-9]*) MIN_LINES=350 ;; esac
+
+input=$(cat)
+command=$(echo "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
+
+if [ -z "$command" ]; then
+  echo '{"decision": "allow"}'
+  exit 0
+fi
+
+# Allow pipes and redirects (| or >) as those are targeted reads or script outputs
+if echo "$command" | grep -qE '\||>|grep|awk|sed'; then
+  echo '{"decision": "allow"}'
+  exit 0
+fi
+
+# Check for cat, head, tail, less, more
+read_cmd=$(echo "$command" | awk '{print $1}')
+case "$read_cmd" in
+  cat|less|more)
+    # Parse tokens to find actual file paths, ignoring option flags like -n or -v
+    eval "tokens=($command)" 2>/dev/null || tokens=($command)
+    for token in "${tokens[@]:1}"; do
+      # Skip flags
+      [[ "$token" == -* ]] && continue
+      # Strip quotes if any
+      clean_path="${token%\"}"
+      clean_path="${clean_path#\"}"
+      clean_path="${clean_path%\'}"
+      clean_path="${clean_path#\'}"
+
+      if [ -f "$clean_path" ]; then
+        lines=$(wc -l < "$clean_path" 2>/dev/null | tr -d ' ' || echo "0")
+        if [ "$lines" -gt "$MIN_LINES" ]; then
+          echo "{\"decision\": \"block\", \"reason\": \"Command '$command' attempts to read large file '$clean_path' ($lines lines) directly into agent context. To conserve tokens, use bulk-read --question '<question>' --paths '$clean_path' or filter with grep/offset.\"}"
+          exit 0
+        fi
+      fi
+    done
+    ;;
+esac
+
+echo '{"decision": "allow"}'

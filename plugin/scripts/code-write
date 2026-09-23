@@ -1,0 +1,62 @@
+#!/bin/bash
+# Delegate boilerplate code generation to economical worker model
+# Resolve symlinks so the script works when linked into a PATH dir (e.g. ~/.local/bin)
+SELF="$(readlink -f "$0")"
+DIR="$(cd "$(dirname "$SELF")/../.." && pwd)"
+WORKER="$DIR/engine/worker.py"
+
+spec=""
+reference=""
+target=""
+model=""
+provider=""
+auto_model=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --spec)       spec="$2"; shift 2 ;;
+    --reference)  reference="$2"; shift 2 ;;
+    --target)     target="$2"; shift 2 ;;
+    --model)      model="$2"; shift 2 ;;
+    --provider)   provider="$2"; shift 2 ;;
+    --auto-model) auto_model=true; shift ;;
+    *)            shift ;;
+  esac
+done
+
+if [ -z "$spec" ] || [ -z "$reference" ]; then
+  echo "Error: --spec and --reference are required" >&2
+  echo "Usage: code-write --spec '<spec>' --reference <pattern_file> [--target <target_file>] [--model <model>] [--provider <provider>] [--auto-model]" >&2
+  exit 1
+fi
+
+if [ ! -f "$reference" ]; then
+  echo "Error: reference file not found: $reference" >&2
+  exit 1
+fi
+
+if head -c 8192 "$reference" | grep -qP '\x00' 2>/dev/null; then
+  echo "Error: reference file '$reference' appears to be binary." >&2
+  exit 1
+fi
+
+extra_args=()
+if [ -n "$target" ]; then
+  extra_args+=(--target "$target")
+fi
+if [ -n "$model" ]; then
+  extra_args+=(--model "$model")
+fi
+if [ -n "$provider" ]; then
+  extra_args+=(--provider "$provider")
+fi
+if [ "$auto_model" = true ]; then
+  extra_args+=(--auto-model)
+fi
+
+{
+  echo "Spec: $spec"
+  echo ""
+  echo "Reference File ($reference):"
+  cat "$reference"
+} | python3 "$WORKER" --mode code-writer "${extra_args[@]}"

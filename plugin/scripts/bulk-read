@@ -1,0 +1,63 @@
+#!/bin/bash
+# Delegate reading large or multiple files to economical worker model
+# Resolve symlinks so the script works when linked into a PATH dir (e.g. ~/.local/bin)
+SELF="$(readlink -f "$0")"
+DIR="$(cd "$(dirname "$SELF")/../.." && pwd)"
+WORKER="$DIR/engine/worker.py"
+
+question=""
+paths=()
+model=""
+provider=""
+auto_model=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --question)   question="$2"; shift 2 ;;
+    --paths)      shift; while [[ $# -gt 0 && ! "$1" =~ ^-- ]]; do paths+=("$1"); shift; done ;;
+    --model)      model="$2"; shift 2 ;;
+    --provider)   provider="$2"; shift 2 ;;
+    --auto-model) auto_model=true; shift ;;
+    *)            shift ;;
+  esac
+done
+
+if [ -z "$question" ] || [ ${#paths[@]} -eq 0 ]; then
+  echo "Error: --question and --paths are required" >&2
+  echo "Usage: bulk-read --question '<question>' --paths file1.ts file2.ts [--model <model>] [--provider <provider>] [--auto-model]" >&2
+  exit 1
+fi
+
+for p in "${paths[@]}"; do
+  if [ ! -f "$p" ]; then
+    echo "Error: file not found: $p" >&2
+    exit 1
+  fi
+  # Detect binary files
+  if head -c 8192 "$p" | grep -qP '\x00' 2>/dev/null; then
+    echo "Error: '$p' appears to be a binary file and cannot be read as text." >&2
+    exit 1
+  fi
+done
+
+extra_args=()
+if [ -n "$model" ]; then
+  extra_args+=(--model "$model")
+fi
+if [ -n "$provider" ]; then
+  extra_args+=(--provider "$provider")
+fi
+if [ "$auto_model" = true ]; then
+  extra_args+=(--auto-model)
+fi
+
+# Stream files formatted as XML tags directly into the worker via stdin
+{
+  for p in "${paths[@]}"; do
+    echo "<file path=\"$p\">"
+    cat "$p"
+    echo "</file>"
+    echo ""
+  done
+  echo "Question: $question"
+} | python3 "$WORKER" --mode bulk-reader "${extra_args[@]}"

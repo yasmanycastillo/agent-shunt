@@ -1,0 +1,173 @@
+# Model-Shunt 🔀
+
+A decoupled, zero-dependency, universal implementation of the **Shunt** model-routing pattern (originally conceived by Spotify Engineering).
+
+**Model-Shunt** allows AI coding agents (**Antigravity, Cursor, Windsurf, Claude Code, Aider, OpenHands**, etc.) to delegate token-heavy I/O (bulk file reading/code analysis) and repetitive boilerplate generation (tests, mocks, stubs, configs) to **fast, economical, or local worker models** (Gemini 2.5 Flash, Groq/Llama, Ollama, DeepSeek, GPT-4o-mini). This cuts primary agent token consumption by up to **90%** while keeping the main context window clean.
+
+---
+
+## ⚡ Key Highlights
+
+* **Zero External Dependencies:** Built with pure Python 3 standard library (`urllib`, `json`, `re`, `argparse`). No `pip install`, no virtual environment, and no `npm` required.
+* **Agent-Agnostic:** Works transparently across any AI coding agent via standard **MCP (Model Context Protocol)**, standalone **CLI scripts**, or **PreToolUse lifecycle hooks**.
+* **Dynamic Model Discovery & Auto-Routing:** Queries the worker endpoint in real time to discover available models and automatically routes to the best model for the task:
+  * **Reader Mode (Bulk I/O):** Prioritizes massive context windows and ultra-low cost (e.g., `gemini-2.5-flash`, `llama-3.3-70b-versatile`, `gpt-4o-mini`).
+  * **Writer Mode (Code Generation):** Prioritizes specialized coding models (e.g., `qwen2.5-coder:latest`, `gemini-2.5-flash`, `deepseek-chat`).
+* **Bypasses Linux `ARG_MAX` Limits:** Unlike naive implementations that pass file contents as CLI arguments (capped at ~128 KB on Linux), Model-Shunt streams corpus data over `stdin`, allowing analysis of hundreds of thousands of lines without buffer overflows.
+* **Deterministic Line Numbering (`N|`):** Automatically prefixes every line in file blocks with its 1-based index, forcing worker models to cite verifiable, exact line numbers instead of hallucinating locations.
+* **Binary File Protection:** Inspects byte headers to reject binary files (PDFs, images, compiled objects) before sending them to the LLM.
+* **Network Resilience:** Automatic exponential backoff retries for rate limits (HTTP 429) and transient server errors (HTTP 503/502), with configurable timeouts and token limits.
+
+---
+
+## 📁 Repository Structure
+
+```
+model-shunt/
+├── engine/
+│   └── worker.py              # Universal LLM worker engine with model discovery (zero-deps)
+├── mcp/
+│   └── server.py              # Stdio MCP server exposing routing tools
+├── plugin/
+│   ├── .claude-plugin/        # Plugin manifest for hook-compatible agents
+│   ├── hooks/                 # PreToolUse interceptor hooks (check-file-size, check-bash-read)
+│   ├── scripts/               # Executable streaming CLIs (bulk-read, code-write)
+│   └── skills/                # Agent skill manifests (/bulk-reader, /code-writer)
+├── config.example.json        # Configuration template
+├── test_shunt.py              # Automated test suite
+└── .gitignore                 # Credential and cache protection
+```
+
+---
+
+## ⚙️ Configuration
+
+Configure your worker model via environment variables or a `config.json` file (placed in `~/.config/model-shunt/config.json` or in the project root):
+
+### Using `config.json`
+
+```json
+{
+  "provider": "gemini",
+  "model": "auto",
+  "api_key": "YOUR_API_KEY",
+  "timeout": 90,
+  "max_tokens": 8192
+}
+```
+
+> **Tip:** Setting `"model": "auto"` (or passing `--auto-model` in the CLI) will automatically inspect the provider's active models and pick the optimal one for reading vs writing.
+
+### Using Environment Variables
+
+```bash
+# Google Gemini (Recommended: 1M token context, high speed, ultra-low cost)
+export SHUNT_PROVIDER="gemini"
+export GEMINI_API_KEY="your-api-key"
+
+# Groq (Ultra-low latency inference)
+export SHUNT_PROVIDER="groq"
+export GROQ_API_KEY="your-api-key"
+
+# Ollama (100% private, local, and free)
+export SHUNT_PROVIDER="ollama"
+export SHUNT_BASE_URL="http://localhost:11434/v1"
+
+# OpenAI / DeepSeek / OpenRouter / Anthropic
+export SHUNT_PROVIDER="deepseek"
+export DEEPSEEK_API_KEY="your-api-key"
+```
+
+---
+
+## 🛠️ Usage Modes
+
+### Mode 1: Universal MCP Server (Recommended)
+
+Model-Shunt provides a standard stdio MCP server exposing three tools:
+
+1. **`get_available_models(provider?)`**: Discovers live models from the provider endpoint and returns recommended models for reading and code writing.
+2. **`bulk_read(question, file_paths, model?, provider?)`**: Reads large or multiple files and outputs concise, structured bullets with exact line citations.
+3. **`code_write(spec, reference_path, target_path?, model?, provider?)`**: Replicates patterns, styling, and conventions from a reference file and writes generated code directly to disk without consuming frontier agent output tokens.
+
+#### Client Configuration:
+Add to your agent's MCP settings (e.g., `claude_desktop_config.json`, Cursor MCP settings, or Antigravity config):
+
+```json
+{
+  "mcpServers": {
+    "model-shunt": {
+      "command": "python3",
+      "args": ["/absolute/path/to/model-shunt/mcp/server.py"],
+      "env": {
+        "SHUNT_PROVIDER": "gemini",
+        "SHUNT_MODEL": "auto",
+        "GEMINI_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+---
+
+### Mode 2: PreToolUse Interceptor Hooks
+
+For agents supporting pre-execution hooks (e.g., Claude Code, custom agent loops):
+
+1. **File Read Interceptor (`check-file-size`):**
+   * If the agent attempts a whole-file read on a file exceeding the threshold (default: 350 lines, configurable via `SHUNT_MIN_LINES`), the hook **blocks** the call and instructs the agent to delegate to `bulk-read`.
+   * Targeted reads with `offset` and `limit` are **allowed**, preserving surgical context for code editing.
+2. **Terminal Guard (`check-bash-read`):**
+   * Prevents agents from bypassing the read hook by executing commands like `cat`, `less`, or `more` on large files directly in the terminal context.
+
+---
+
+### Mode 3: Standalone CLI & Scripts
+
+You can also use Model-Shunt directly from the command line or from agent bash sessions:
+
+#### Discover Available Models & Recommendations
+```bash
+python3 engine/worker.py --list-models --provider gemini
+```
+
+#### Run Bulk Reading Analysis
+```bash
+./plugin/scripts/bulk-read \
+  --question "How does the token refresh cycle work?" \
+  --paths src/auth.py src/tokens.py \
+  --auto-model
+```
+
+#### Generate Boilerplate Directly to Disk
+```bash
+./plugin/scripts/code-write \
+  --spec "Create unit tests for the BillingService covering charge and refund" \
+  --reference tests/test_user.py \
+  --target tests/test_billing.py \
+  --auto-model
+```
+
+---
+
+## 🧪 Verification
+
+Run the built-in test suite to verify your environment:
+
+```bash
+python3 test_shunt.py
+```
+
+The test suite validates:
+- Configuration resolution, fallback cascades, and model selection.
+- Binary file detection and rejection.
+- Hook decisions (surgical reads allowed, large file reads blocked, bash flag parsing).
+- MCP stdio protocol compliance and tool execution.
+- CLI discovery flags.
+
+---
+
+## 📄 License
+
+MIT. Inspired by Spotify Engineering's Shunt architecture.

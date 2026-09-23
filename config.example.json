@@ -1,0 +1,9 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "api_key": "YOUR_API_KEY_HERE",
+  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+  "timeout": 90,
+  "max_tokens": 8192,
+  "notes": "Provider options: gemini, openai, groq, deepseek, anthropic, openrouter, ollama. You can set model to 'auto' to dynamically pick the best available model for each task."
+}

@@ -1,0 +1,13 @@
+{
+  "name": "model-shunt",
+  "owner": {
+    "name": "Model-Shunt"
+  },
+  "plugins": [
+    {
+      "name": "shunt",
+      "source": "./plugin",
+      "description": "Model routing plugin for Claude Code - intercepts bulky file reads and repetitive code generation, delegating to fast, economical worker models"
+    }
+  ]
+}
