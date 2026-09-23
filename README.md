@@ -101,6 +101,8 @@ Model-Shunt provides a standard stdio MCP server exposing three tools:
 
 #### Installation
 
+MCP Registry name: `mcp-name: io.github.yasmanycastillo/model-shunt`
+
 **Via npx (no clone needed, requires Python 3.9+ on PATH):**
 ```bash
 claude mcp add model-shunt -- npx -y model-shunt
