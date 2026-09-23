@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent-Shunt 🔀 | Universal Model Routing for AI Coding Agents</title>
+  <meta name="description" content="Decoupled, zero-dependency model-routing shunt for AI coding agents. Cut token burn by up to 90% by delegating bulk I/O and boilerplate code generation.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22><text y=%2226%22 font-size=%2228%22>🔀</text></svg>">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              glow: '#00f2fe',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+    .gradient-radial {
+      background: radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.18) 0%, rgba(9, 13, 22, 0) 70%);
+    }
+    .card-glass {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-glass:hover {
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+    .neon-border {
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-brand-500 selection:text-black">
+
+  <!-- Background Glow -->
+  <div class="fixed inset-0 gradient-radial pointer-events-none -z-10"></div>
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-[#090d16]/80 border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🔀</span>
+        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">Agent-Shunt</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 font-mono">v1.1</span>
+      </div>
+
+      <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+        <a href="#how-it-works" class="hover:text-brand-400 transition-colors">How It Works</a>
+        <a href="#calculator" class="hover:text-brand-400 transition-colors">Savings Calculator</a>
+        <a href="#setup" class="hover:text-brand-400 transition-colors">Quick Setup</a>
+        <a href="#features" class="hover:text-brand-400 transition-colors">Features</a>
+      </nav>
+
+      <div class="flex items-center space-x-3">
+        <a href="https://github.com/yasmanycastillo/agent-shunt" target="_blank" rel="noopener noreferrer" 
+           class="flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-white hover:border-brand-500/40">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative pt-24 pb-20 px-6 overflow-hidden">
+    <div class="max-w-5xl mx-auto text-center">
+      
+      <!-- Badge -->
+      <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-medium mb-8">
+        <span class="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
+        <span>Universal Shunt Routing for AI Coding Agents</span>
+      </div>
+
+      <!-- Heading -->
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6 leading-tight">
+        Stop burning frontier tokens on <span class="bg-gradient-to-r from-brand-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">dumb file I/O</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+        A universal, zero-dependency model-routing shunt. Delegates massive codebase reading and boilerplate generation to fast, economical worker models (Gemini Flash, Groq, Ollama) — cutting token burn by up to <strong class="text-brand-400 font-semibold">90%</strong> while preserving context.
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#setup" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-brand-500 to-cyan-600 text-slate-950 font-semibold text-sm hover:brightness-110 transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center space-x-2">
+          <span>Configure in 2 Minutes</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+        <a href="#calculator" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-200 font-medium text-sm transition-all flex items-center justify-center space-x-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span>Calculate Token Savings</span>
+        </a>
+      </div>
+
+      <!-- Feature Pills -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-14 text-xs font-mono text-slate-400 max-w-4xl mx-auto">
+        <div class="card-glass py-2.5 px-3 rounded-lg flex items-center justify-center space-x-2">
+          <span class="text-brand-400">✓</span>
+          <span>Zero external dependencies</span>
+        </div>
+        <div class="card-glass py-2.5 px-3 rounded-lg flex items-center justify-center space-x-2">
+          <span class="text-brand-400">✓</span>
+          <span>Bypasses Linux ARG_MAX</span>
+        </div>
+        <div class="card-glass py-2.5 px-3 rounded-lg flex items-center justify-center space-x-2">
+          <span class="text-brand-400">✓</span>
+          <span>Dynamic Model Discovery</span>
+        </div>
+        <div class="card-glass py-2.5 px-3 rounded-lg flex items-center justify-center space-x-2">
+          <span class="text-brand-400">✓</span>
+          <span>MCP + CLI + Hooks</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- How It Works (Before vs After) -->
+  <section id="how-it-works" class="py-20 px-6 border-t border-white/5 relative">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">The Shunt Architecture</h2>
+        <p class="text-slate-400 text-sm max-w-2xl mx-auto font-light">Inspired by Spotify Engineering's internal routing pattern, redesigned as a universal open-source tool.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        
+        <!-- WITHOUT SHUNT -->
+        <div class="card-glass rounded-2xl p-7 relative border-red-500/20 hover:border-red-500/40 transition-all">
+          <div class="flex items-center justify-between mb-5">
+            <span class="text-xs font-mono uppercase tracking-wider text-red-400 font-semibold flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-red-400"></span>
+              <span>Without Agent-Shunt</span>
+            </span>
+            <span class="text-xs px-2.5 py-1 rounded bg-red-500/10 text-red-300 font-mono">Costly & Slow</span>
+          </div>
+
+          <p class="text-xs text-slate-400 mb-6">The primary frontier agent reads raw files directly into its expensive context window.</p>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div class="bg-black/50 border border-red-500/20 rounded-lg p-3 text-red-300">
+              <div class="text-slate-500 mb-1">// Frontier Agent Context</div>
+              <div>📖 File 1 (auth.ts): 1,200 lines (3,800 tokens)</div>
+              <div>📖 File 2 (session.ts): 850 lines (2,600 tokens)</div>
+              <div>📖 File 3 (user.ts): 2,400 lines (7,400 tokens)</div>
+              <div class="mt-2 text-red-400 font-semibold">Total: 13,800 tokens at $3.00/MTok</div>
+            </div>
+            <div class="p-3 bg-red-950/20 border border-red-900/40 rounded-lg text-red-300 text-xs">
+              ⚠️ Context pollution: 95% of read tokens are irrelevant boilerplate that dilutes reasoning accuracy.
+            </div>
+          </div>
+        </div>
+
+        <!-- WITH SHUNT -->
+        <div class="card-glass rounded-2xl p-7 relative border-brand-500/30 neon-border transition-all">
+          <div class="flex items-center justify-between mb-5">
+            <span class="text-xs font-mono uppercase tracking-wider text-brand-400 font-semibold flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-brand-400"></span>
+              <span>With Agent-Shunt 🔀</span>
+            </span>
+            <span class="text-xs px-2.5 py-1 rounded bg-brand-500/10 text-brand-300 font-mono">90% Less Tokens</span>
+          </div>
+
+          <p class="text-xs text-slate-400 mb-6">Heavy files stream into a fast worker model. Only concise bullets with exact line numbers return.</p>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div class="bg-black/50 border border-brand-500/20 rounded-lg p-3 text-brand-300">
+              <div class="text-slate-500 mb-1">// Shunt Worker Streams & Synthesizes</div>
+              <div>⚡ Worker Model: Gemini 2.5 Flash / Groq ($0.075/MTok or $0)</div>
+              <div class="text-slate-400 mt-2">// Frontier Agent Only Receives:</div>
+              <div class="text-emerald-400 mt-1">• auth.ts:42 | AuthTokenManager handles refresh</div>
+              <div class="text-emerald-400">• session.ts:118 | Session cookie timeout set to 3600s</div>
+              <div class="mt-2 text-brand-400 font-semibold">Total to Frontier: ~150 tokens (~98.9% saved!)</div>
+            </div>
+            <div class="p-3 bg-brand-950/20 border border-brand-900/40 rounded-lg text-brand-300 text-xs">
+              ✨ Frontier context stays razor sharp; exact line citations (N|) prevent hallucinations.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Token & Cost Savings Calculator -->
+  <section id="calculator" class="py-20 px-6 border-t border-white/5 relative">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">Interactive Savings Calculator</h2>
+        <p class="text-slate-400 text-sm font-light">Estimate how much money and context tokens Agent-Shunt saves for your daily coding workflow.</p>
+      </div>
+
+      <div class="card-glass rounded-2xl p-8 border border-white/10 shadow-2xl">
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          
+          <!-- Controls -->
+          <div class="space-y-6">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <label for="linesSlider" class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Lines of Code Read Daily</label>
+                <span id="linesValue" class="text-brand-400 font-mono font-bold text-sm">20,000 lines</span>
+              </div>
+              <input type="range" id="linesSlider" min="2000" max="100000" step="1000" value="20000" 
+                     class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                <span>2k lines</span>
+                <span>50k lines</span>
+                <span>100k lines</span>
+              </div>
+            </div>
+
+            <div>
+              <label for="primaryModelSelect" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Primary Agent Model</label>
+              <select id="primaryModelSelect" class="w-full bg-slate-900/90 border border-white/10 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-brand-500 focus:outline-none">
+                <option value="3.00">Claude 3.7 Sonnet ($3.00 / MTok in)</option>
+                <option value="2.50">GPT-4o ($2.50 / MTok in)</option>
+                <option value="3.00">Claude 3.5 Sonnet ($3.00 / MTok in)</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="workerModelSelect" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Shunt Worker Model</label>
+              <select id="workerModelSelect" class="w-full bg-slate-900/90 border border-white/10 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-brand-500 focus:outline-none">
+                <option value="0.075">Google Gemini 2.5 Flash ($0.075 / MTok)</option>
+                <option value="0.05">Groq Llama 3.3 70B ($0.59 / MTok)</option>
+                <option value="0.00">Ollama Local (Qwen 2.5 Coder) - $0.00 (Free)</option>
+                <option value="0.14">DeepSeek Chat ($0.14 / MTok)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Output Card -->
+          <div class="bg-gradient-to-br from-slate-900 to-black p-6 rounded-xl border border-brand-500/20 text-center flex flex-col justify-center">
+            <span class="text-xs uppercase font-mono tracking-wider text-slate-400 mb-1">Estimated Monthly Cost Savings</span>
+            <div id="savingsAmount" class="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-brand-400 font-mono my-2">
+              $52.65
+            </div>
+            <div id="savingsPercent" class="text-xs font-mono text-emerald-400 font-semibold mb-6">
+              Saved ~94.8% of token costs
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-left font-mono text-xs border-t border-white/10 pt-4">
+              <div>
+                <span class="text-slate-500 block text-[10px]">Without Shunt</span>
+                <span id="costWithout" class="text-red-400 font-semibold">$55.80 / mo</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px]">With Agent-Shunt</span>
+                <span id="costWith" class="text-brand-400 font-semibold">$3.15 / mo</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- One-Click Agent Setup -->
+  <section id="setup" class="py-20 px-6 border-t border-white/5 relative">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">One-Click Agent Setup</h2>
+        <p class="text-slate-400 text-sm font-light">Copy and paste the configuration into your preferred coding agent.</p>
+      </div>
+
+      <!-- Agent Tabs -->
+      <div class="flex justify-center flex-wrap gap-2 mb-6" id="agentTabs">
+        <button onclick="switchTab('antigravity')" id="tab-antigravity" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-brand-500 text-black font-semibold">
+          Antigravity
+        </button>
+        <button onclick="switchTab('cursor')" id="tab-cursor" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
+          Cursor
+        </button>
+        <button onclick="switchTab('claude')" id="tab-claude" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
+          Claude Code
+        </button>
+        <button onclick="switchTab('windsurf')" id="tab-windsurf" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
+          Windsurf / Zed
+        </button>
+      </div>
+
+      <!-- Code Box -->
+      <div class="relative card-glass rounded-xl overflow-hidden border border-white/10">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-black/40 border-b border-white/5 text-xs font-mono text-slate-400">
+          <span id="configFileName">mcpServers configuration</span>
+          <button onclick="copySnippet()" class="flex items-center space-x-1.5 px-3 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span id="copyBtnText">Copy</span>
+          </button>
+        </div>
+        <pre class="p-5 font-mono text-xs overflow-x-auto text-cyan-300 leading-relaxed"><code id="codeSnippetContent"></code></pre>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="features" class="py-20 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">Engineered for Autonomous Coding</h2>
+        <p class="text-slate-400 text-sm max-w-2xl mx-auto font-light">Every detail designed to remove friction, prevent bugs, and safeguard your context window.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        
+        <div class="card-glass p-6 rounded-xl">
+          <div class="w-10 h-10 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-4 font-mono font-bold">
+            01
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Zero Dependencies</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Written in pure Python 3 standard library. No pip install, no virtualenv, and no npm. Works instantly anywhere Python 3.8+ is installed.
+          </p>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="w-10 h-10 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-4 font-mono font-bold">
+            02
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Linux ARG_MAX Guard</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Bypasses the 128 KB CLI buffer limit in Linux by streaming file contents over stdin. Process hundreds of files in one pass without shell crashes.
+          </p>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="w-10 h-10 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-4 font-mono font-bold">
+            03
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Live Model Discovery</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Exposes <code class="text-cyan-300">get_available_models</code> to query your provider's active models in real time, auto-selecting the best model for reading vs writing.
+          </p>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="w-10 h-10 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-4 font-mono font-bold">
+            04
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Binary File Guard</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Automatically scans initial byte blocks for null bytes (<code class="text-cyan-300">\x00</code>) to reject images, PDFs, or compiled objects before sending them to the LLM.
+          </p>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="w-10 h-10 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-4 font-mono font-bold">
+            05
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Exact Line Indexing (N|)</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Every file block has each line prefixed with its 1-based number. Worker models cite exact line ranges with zero guessing or hallucination.
+          </p>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="w-10 h-10 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-4 font-mono font-bold">
+            06
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Exponential Backoff</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Automatic retry loops for HTTP 429 rate limits and 503 gateway timeouts, ensuring long-running agent workflows don't fail unexpectedly.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-white/5 text-center text-xs text-slate-500 font-mono">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+        Agent-Shunt 🔀 • Open Source MIT License
+      </div>
+      <div>
+        Inspired by Spotify Engineering's Shunt Routing Pattern
+      </div>
+      <div>
+        <a href="https://github.com/yasmanycastillo/agent-shunt" class="text-brand-400 hover:underline">GitHub Repository</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Calculator Logic
+    const linesSlider = document.getElementById('linesSlider');
+    const linesValue = document.getElementById('linesValue');
+    const primaryModelSelect = document.getElementById('primaryModelSelect');
+    const workerModelSelect = document.getElementById('workerModelSelect');
+    const savingsAmount = document.getElementById('savingsAmount');
+    const savingsPercent = document.getElementById('savingsPercent');
+    const costWithout = document.getElementById('costWithout');
+    const costWith = document.getElementById('costWith');
+
+    function calculateSavings() {
+      const lines = parseInt(linesSlider.value);
+      linesValue.innerText = lines.toLocaleString() + ' lines';
+
+      // Rule of thumb: 1 line of code ≈ 3.1 tokens
+      const dailyTokens = lines * 3.1;
+      const monthlyTokens = dailyTokens * 30; // 30 days
+
+      const primaryPricePerM = parseFloat(primaryModelSelect.value);
+      const workerPricePerM = parseFloat(workerModelSelect.value);
+
+      // Cost without shunt: all tokens read by primary model
+      const totalCostWithout = (monthlyTokens / 1_000_000) * primaryPricePerM;
+
+      // Cost with shunt:
+      // Worker reads all tokens
+      const workerCost = (monthlyTokens / 1_000_000) * workerPricePerM;
+      // Primary only reads synthesis bullets (approx 1.5% of total tokens)
+      const primarySynthesizedTokens = monthlyTokens * 0.015;
+      const primaryReducedCost = (primarySynthesizedTokens / 1_000_000) * primaryPricePerM;
+      const totalCostWith = workerCost + primaryReducedCost;
+
+      const saved = Math.max(0, totalCostWithout - totalCostWith);
+      const percent = totalCostWithout > 0 ? (saved / totalCostWithout) * 100 : 0;
+
+      savingsAmount.innerText = '$' + saved.toFixed(2);
+      savingsPercent.innerText = `Saved ~${percent.toFixed(1)}% of token costs`;
+      costWithout.innerText = '$' + totalCostWithout.toFixed(2) + ' / mo';
+      costWith.innerText = '$' + totalCostWith.toFixed(2) + ' / mo';
+    }
+
+    linesSlider.addEventListener('input', calculateSavings);
+    primaryModelSelect.addEventListener('change', calculateSavings);
+    workerModelSelect.addEventListener('change', calculateSavings);
+    calculateSavings();
+
+    // Setup Code Snippet Tabs
+    const snippets = {
+      antigravity: {
+        file: "antigravity.json / MCP Settings",
+        code: `{\n  "mcpServers": {\n    "agent-shunt": {\n      "command": "python3",\n      "args": ["/absolute/path/to/agent-shunt/mcp/server.py"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
+      },
+      cursor: {
+        file: ".cursor/mcp.json or Cursor MCP Settings",
+        code: `{\n  "mcpServers": {\n    "agent-shunt": {\n      "command": "python3",\n      "args": ["/absolute/path/to/agent-shunt/mcp/server.py"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
+      },
+      claude: {
+        file: "Install as local plugin",
+        code: `# 1. Install local plugin into Claude Code\nclaude plugin install /absolute/path/to/agent-shunt/plugin\n\n# 2. Or run CLI directly in your terminal\n./plugin/scripts/bulk-read --question "How are tokens handled?" --paths src/auth.ts --auto-model`
+      },
+      windsurf: {
+        file: "~/.codeium/windsurf/mcp_config.json",
+        code: `{\n  "mcpServers": {\n    "agent-shunt": {\n      "command": "python3",\n      "args": ["/absolute/path/to/agent-shunt/mcp/server.py"],\n      "env": {\n        "SHUNT_PROVIDER": "groq",\n        "SHUNT_MODEL": "auto",\n        "GROQ_API_KEY": "YOUR_GROQ_API_KEY"\n      }\n    }\n  }\n}`
+      }
+    };
+
+    function switchTab(agent) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-black', 'font-semibold');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      const activeBtn = document.getElementById('tab-' + agent);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+        activeBtn.classList.add('bg-brand-500', 'text-black', 'font-semibold');
+      }
+
+      document.getElementById('configFileName').innerText = snippets[agent].file;
+      document.getElementById('codeSnippetContent').innerText = snippets[agent].code;
+    }
+
+    function copySnippet() {
+      const code = document.getElementById('codeSnippetContent').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const btnText = document.getElementById('copyBtnText');
+        btnText.innerText = 'Copied!';
+        setTimeout(() => { btnText.innerText = 'Copy'; }, 2000);
+      });
+    }
+
+    // Initialize default tab
+    switchTab('antigravity');
+  </script>
+</body>
+</html>
