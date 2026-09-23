@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yasmanycastillo/model-shunt",
+  "description": "Model routing for AI coding agents: delegate bulk file reading and boilerplate code generation to fast, economical worker models (Gemini Flash, Groq, Ollama, DeepSeek). Cuts primary agent token consumption by up to 90% via three tools: bulk_read, code_write, and get_available_models. Pure Python stdlib, zero dependencies.",
+  "repository": {
+    "url": "https://github.com/yasmanycastillo/agent-shunt",
+    "source": "github"
+  },
+  "version": "1.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "model-shunt",
+      "version": "1.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "environmentVariables": [
+    {
+      "name": "SHUNT_PROVIDER",
+      "description": "Worker provider: gemini, openai, groq, deepseek, anthropic, openrouter, or ollama",
+      "isRequired": false
+    },
+    {
+      "name": "SHUNT_MODEL",
+      "description": "Worker model override, or 'auto' to pick the best model per task",
+      "isRequired": false
+    },
+    {
+      "name": "SHUNT_API_KEY",
+      "description": "API key for the worker provider (provider-specific keys like GEMINI_API_KEY also work)",
+      "isRequired": false,
+      "isSecret": true
+    },
+    {
+      "name": "SHUNT_ALLOWED_ROOTS",
+      "description": "PATH-style list of directories bulk_read/code_write may touch (defaults to the workspace)",
+      "isRequired": false
+    }
+  ]
+}
