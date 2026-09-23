@@ -35,7 +35,8 @@ case "$read_cmd" in
       if [ -f "$clean_path" ]; then
         lines=$(wc -l < "$clean_path" 2>/dev/null | tr -d ' ' || echo "0")
         if [ "$lines" -gt "$MIN_LINES" ]; then
-          echo "{\"decision\": \"block\", \"reason\": \"Command '$command' attempts to read large file '$clean_path' ($lines lines) directly into agent context. To conserve tokens, use bulk-read --question '<question>' --paths '$clean_path' or filter with grep/offset.\"}"
+          BULK_READ="$(cd "$(dirname "$0")/../scripts" && pwd)/bulk-read"
+          echo "{\"decision\": \"block\", \"reason\": \"Command '$command' attempts to read large file '$clean_path' ($lines lines) directly into agent context. To conserve tokens, use '$BULK_READ' --question '<question>' --paths '$clean_path' or filter with grep/offset.\"}"
           exit 0
         fi
       fi

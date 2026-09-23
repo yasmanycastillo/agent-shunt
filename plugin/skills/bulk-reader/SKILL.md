@@ -13,7 +13,8 @@ Use this skill when:
 ## Usage
 Run via Bash:
 ```bash
-bulk-read --question "How are authentication tokens refreshed and where are they stored?" --paths src/auth.ts src/token-manager.ts
+# CLAUDE_PLUGIN_ROOT is set by Claude Code when running plugin skills
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/bulk-read" --question "How are authentication tokens refreshed and where are they stored?" --paths src/auth.ts src/token-manager.ts
 ```
 
 The tool will return structured bullet points with exact line numbers and symbol names.

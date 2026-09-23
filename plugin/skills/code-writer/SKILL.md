@@ -12,9 +12,10 @@ Use this skill when:
 ## Usage
 Run via Bash:
 ```bash
+# CLAUDE_PLUGIN_ROOT is set by Claude Code when running plugin skills
 # Generate unit tests matching an existing test suite and write directly to disk:
-code-write --spec "Write comprehensive unit tests for PaymentService covering charge, refund, and timeout errors" --reference tests/UserService.test.ts --target tests/PaymentService.test.ts
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/code-write" --spec "Write comprehensive unit tests for PaymentService covering charge, refund, and timeout errors" --reference tests/UserService.test.ts --target tests/PaymentService.test.ts
 
 # Generate to stdout:
-code-write --spec "Create docker-compose service configuration for redis" --reference docker-compose.yml
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/code-write" --spec "Create docker-compose service configuration for redis" --reference docker-compose.yml
 ```

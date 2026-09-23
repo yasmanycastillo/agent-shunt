@@ -29,4 +29,5 @@ if [ "$lines" -le "$MIN_LINES" ]; then
 fi
 
 # 4. Block large whole-file reads and suggest bulk-read
-echo "{\"decision\": \"block\", \"reason\": \"File '$file_path' is ${lines} lines (threshold: ${MIN_LINES}). To save tokens and preserve agent context window, delegate to bulk-read: bulk-read --question '<your question>' --paths '$file_path'. If you need exact lines for surgical editing, specify offset/limit parameters.\"}"
+BULK_READ="$(cd "$(dirname "$0")/../scripts" && pwd)/bulk-read"
+echo "{\"decision\": \"block\", \"reason\": \"File '$file_path' is ${lines} lines (threshold: ${MIN_LINES}). To save tokens and preserve agent context window, delegate to bulk-read: '$BULK_READ' --question '<your question>' --paths '$file_path'. If you need exact lines for surgical editing, specify offset/limit parameters.\"}"
