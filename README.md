@@ -56,13 +56,14 @@ Configure your worker model via environment variables or a `config.json` file (p
 {
   "provider": "gemini",
   "model": "auto",
-  "api_key": "YOUR_API_KEY",
   "timeout": 90,
   "max_tokens": 8192
 }
 ```
 
 > **Tip:** Setting `"model": "auto"` (or passing `--auto-model` in the CLI) will automatically inspect the provider's active models and pick the optimal one for reading vs writing.
+
+> **Security:** Do **not** put your API key in `config.json` — use environment variables instead (e.g. `GEMINI_API_KEY`, `GROQ_API_KEY`, or `SHUNT_API_KEY`). An `api_key` field exists as a last-resort fallback, but keeping secrets out of files is strongly recommended.
 
 ### Using Environment Variables
 
