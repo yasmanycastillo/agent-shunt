@@ -8,8 +8,8 @@ import os
 import json
 import subprocess
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from engine.worker import (
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+from model_shunt.worker import (
     resolve_settings,
     clean_markdown_fences,
     is_binary_file,
@@ -18,7 +18,7 @@ from engine.worker import (
 )
 
 def test_engine_resolution():
-    print("[1/5] Testing engine settings resolution and model selection...")
+    print("[1/6] Testing engine settings resolution and model selection...")
     os.environ["SHUNT_PROVIDER"] = "gemini"
     os.environ["SHUNT_MODEL"] = "gemini-2.5-flash"
     os.environ["SHUNT_API_KEY"] = "dummy_key"
@@ -44,7 +44,7 @@ def test_engine_resolution():
     print("  -> Engine resolution & model selection passed.")
 
 def test_binary_detection():
-    print("[2/5] Testing binary file detection...")
+    print("[2/6] Testing binary file detection...")
     bin_file = "/tmp/test_binary.bin"
     txt_file = "/tmp/test_text.txt"
     try:
@@ -62,7 +62,7 @@ def test_binary_detection():
                 os.remove(p)
 
 def test_hooks():
-    print("[3/5] Testing PreToolUse hooks (agent-agnostic)...")
+    print("[3/6] Testing PreToolUse hooks (agent-agnostic)...")
     hook_size = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin/hooks/check-file-size")
     hook_bash = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin/hooks/check-bash-read")
 
@@ -100,8 +100,8 @@ def test_hooks():
             os.remove(test_large_file)
 
 def test_mcp_server():
-    print("[4/5] Testing MCP stdio server protocol & tools...")
-    server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp/server.py")
+    print("[4/6] Testing MCP stdio server protocol & tools...")
+    server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src/model_shunt/server.py")
     proc = subprocess.Popen(
         [sys.executable, server_path],
         stdin=subprocess.PIPE,
@@ -143,8 +143,8 @@ def test_mcp_server():
     assert info["provider"] == "gemini"
     assert "best_model_for_reader" in info
 
-    # 4. Call bulk_read on binary file -> should return error
-    bin_file = "/tmp/test_binary_mcp.bin"
+    # 4. Call bulk_read on binary file (inside workspace) -> should return error
+    bin_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_binary_mcp.bin")
     with open(bin_file, "wb") as f:
         f.write(b"data\x00nullbyte")
     try:
@@ -169,9 +169,61 @@ def test_mcp_server():
     proc.terminate()
     print("  -> MCP server protocol & tool execution passed.")
 
+def test_path_sandbox():
+    print("[6/6] Testing path sandbox restriction...")
+    root = os.path.dirname(os.path.abspath(__file__))
+    server_path = os.path.join(root, "src/model_shunt/server.py")
+
+    def start_server(extra_env=None):
+        env = dict(os.environ)
+        if extra_env:
+            env.update(extra_env)
+        return subprocess.Popen(
+            [sys.executable, server_path],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, cwd=root, env=env
+        )
+
+    def call(proc, msg_id, name, arguments):
+        req = json.dumps({"jsonrpc": "2.0", "id": msg_id, "method": "tools/call",
+                          "params": {"name": name, "arguments": arguments}}) + "\n"
+        proc.stdin.write(req)
+        proc.stdin.flush()
+        return json.loads(proc.stdout.readline())
+
+    # 1. Path outside the workspace is rejected
+    proc = start_server()
+    resp = call(proc, 2, "bulk_read", {"question": "x", "file_paths": ["/etc/passwd"]})
+    assert resp["result"].get("isError") is True, f"Expected sandbox error, got {resp}"
+    assert "outside the allowed roots" in resp["result"]["content"][0]["text"]
+    proc.terminate()
+
+    # 2. code_write target outside the workspace is rejected
+    proc = start_server()
+    resp = call(proc, 3, "code_write", {
+        "spec": "x",
+        "reference_path": os.path.join(root, "config.example.json"),
+        "target_path": "/tmp/evil_output.py"
+    })
+    assert resp["result"].get("isError") is True, f"Expected sandbox error, got {resp}"
+    assert "outside the allowed roots" in resp["result"]["content"][0]["text"]
+    proc.terminate()
+
+    # 3. SHUNT_ALLOWED_ROOTS expands the sandbox
+    proc = start_server({"SHUNT_ALLOWED_ROOTS": "/etc"})
+    resp = call(proc, 4, "bulk_read", {"question": "x", "file_paths": ["/etc/hostname"]})
+    # The call must NOT be rejected by the sandbox (it proceeds to the worker,
+    # which is not exercised here; a sandbox rejection would be isError with
+    # 'outside the allowed roots').
+    text = resp["result"]["content"][0]["text"]
+    assert not ("outside the allowed roots" in text and resp["result"].get("isError")), \
+        f"Path inside SHUNT_ALLOWED_ROOTS was rejected: {resp}"
+    proc.terminate()
+    print("  -> Path sandbox tests passed.")
+
 def test_cli_list_models():
-    print("[5/5] Testing CLI --list-models flag...")
-    worker_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "engine/worker.py")
+    print("[5/6] Testing CLI --list-models flag...")
+    worker_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src/model_shunt/worker.py")
     res = subprocess.run([sys.executable, worker_path, "--list-models", "--provider", "gemini"], capture_output=True, text=True)
     assert res.returncode == 0, f"Expected returncode 0, got {res.returncode}: {res.stderr}"
     assert "Recommended Reader Model" in res.stdout
@@ -184,4 +236,5 @@ if __name__ == "__main__":
     test_hooks()
     test_mcp_server()
     test_cli_list_models()
+    test_path_sandbox()
     print("\nALL VERIFICATION TESTS PASSED SUCCESSFULLY!")

@@ -30,15 +30,17 @@ A decoupled, zero-dependency, universal implementation of the **Shunt** model-ro
 
 ```
 model-shunt/
-├── engine/
-│   └── worker.py              # Universal LLM worker engine with model discovery (zero-deps)
-├── mcp/
+├── src/model_shunt/
+│   ├── worker.py              # Universal LLM worker engine with model discovery (zero-deps)
 │   └── server.py              # Stdio MCP server exposing routing tools
+├── bin/model-shunt.js         # npm/npx launcher shim (requires local Python 3)
 ├── plugin/
 │   ├── .claude-plugin/        # Plugin manifest for hook-compatible agents
 │   ├── hooks/                 # PreToolUse interceptor hooks (check-file-size, check-bash-read)
 │   ├── scripts/               # Executable streaming CLIs (bulk-read, code-write)
 │   └── skills/                # Agent skill manifests (/bulk-reader, /code-writer)
+├── pyproject.toml             # PyPI packaging (uvx / pip install)
+├── package.json               # npm packaging (npx)
 ├── config.example.json        # Configuration template
 ├── test_shunt.py              # Automated test suite
 └── .gitignore                 # Credential and cache protection
@@ -97,7 +99,19 @@ Model-Shunt provides a standard stdio MCP server exposing three tools:
 2. **`bulk_read(question, file_paths, model?, provider?)`**: Reads large or multiple files and outputs concise, structured bullets with exact line citations.
 3. **`code_write(spec, reference_path, target_path?, model?, provider?)`**: Replicates patterns, styling, and conventions from a reference file and writes generated code directly to disk without consuming frontier agent output tokens.
 
-#### Client Configuration:
+#### Installation
+
+**Via npx (no clone needed, requires Python 3.9+ on PATH):**
+```bash
+claude mcp add model-shunt -- npx -y model-shunt
+```
+
+**Via uvx / pip (no Node required):**
+```bash
+claude mcp add model-shunt -- uvx model-shunt
+```
+
+#### Client Configuration (from a clone):
 Add to your agent's MCP settings (e.g., `claude_desktop_config.json`, Cursor MCP settings, or Antigravity config):
 
 ```json
@@ -105,7 +119,7 @@ Add to your agent's MCP settings (e.g., `claude_desktop_config.json`, Cursor MCP
   "mcpServers": {
     "model-shunt": {
       "command": "python3",
-      "args": ["/absolute/path/to/model-shunt/mcp/server.py"],
+      "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"],
       "env": {
         "SHUNT_PROVIDER": "gemini",
         "SHUNT_MODEL": "auto",
@@ -115,6 +129,8 @@ Add to your agent's MCP settings (e.g., `claude_desktop_config.json`, Cursor MCP
   }
 }
 ```
+
+> **Security:** by default `bulk_read`/`code_write` only operate on files inside the server's working directory (the agent workspace). Set `SHUNT_ALLOWED_ROOTS` (PATH-style list) to expand the sandbox.
 
 ---
 
@@ -136,7 +152,7 @@ You can also use Model-Shunt directly from the command line or from agent bash s
 
 #### Discover Available Models & Recommendations
 ```bash
-python3 engine/worker.py --list-models --provider gemini
+python3 src/model_shunt/worker.py --list-models --provider gemini
 ```
 
 #### Run Bulk Reading Analysis

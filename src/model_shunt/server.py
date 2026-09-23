@@ -10,9 +10,10 @@ import sys
 import os
 import json
 
-# Add parent directory to path to import engine
+# Allow running as a plain script (python3 src/model_shunt/server.py) in addition
+# to being imported as an installed package.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from engine.worker import (
+from model_shunt.worker import (
     run_worker,
     clean_markdown_fences,
     number_file_lines,
@@ -21,6 +22,36 @@ from engine.worker import (
     fetch_available_models,
     get_best_model
 )
+
+
+def get_allowed_roots():
+    """Directories that bulk_read/code_write may touch.
+
+    Defaults to the server's working directory (the agent's workspace).
+    Expand or override with SHUNT_ALLOWED_ROOTS, a PATH-style list
+    (os.pathsep-separated absolute or relative paths).
+    """
+    raw = os.environ.get("SHUNT_ALLOWED_ROOTS")
+    if raw and raw.strip():
+        return [os.path.abspath(p) for p in raw.split(os.pathsep) if p.strip()]
+    return [os.getcwd()]
+
+
+def resolve_allowed_path(path, for_write=False):
+    """Resolve `path` and verify it stays inside an allowed root.
+
+    Returns the absolute path, or raises PermissionError with a clear message.
+    """
+    abs_path = os.path.abspath(path)
+    for root in get_allowed_roots():
+        if abs_path == root or abs_path.startswith(root + os.sep):
+            return abs_path
+    action = "write to" if for_write else "read"
+    raise PermissionError(
+        f"Path rejected: '{path}' is outside the allowed roots. "
+        f"{action.capitalize()} operations are restricted to the workspace "
+        f"(set SHUNT_ALLOWED_ROOTS to expand)."
+    )
 
 TOOLS = [
     {
@@ -131,6 +162,10 @@ def handle_bulk_read(arguments):
 
     payload_parts = []
     for fp in file_paths:
+        try:
+            fp = resolve_allowed_path(fp)
+        except PermissionError as e:
+            return {"isError": True, "content": [{"type": "text", "text": f"Error: {e}"}]}
         if not os.path.isfile(fp):
             return {"isError": True, "content": [{"type": "text", "text": f"Error: file not found: {fp}"}]}
         if is_binary_file(fp):
@@ -166,6 +201,14 @@ def handle_code_write(arguments):
 
     if not spec:
         return {"isError": True, "content": [{"type": "text", "text": "Error: spec is required"}]}
+
+    try:
+        ref_path = resolve_allowed_path(ref_path)
+        if target_path:
+            target_path = resolve_allowed_path(target_path, for_write=True)
+    except PermissionError as e:
+        return {"isError": True, "content": [{"type": "text", "text": f"Error: {e}"}]}
+
     if not ref_path or not os.path.isfile(ref_path):
         return {"isError": True, "content": [{"type": "text", "text": f"Error: reference file not found: {ref_path}"}]}
     if is_binary_file(ref_path):
@@ -224,7 +267,7 @@ def main():
                 "jsonrpc": "2.0",
                 "id": msg_id,
                 "result": {
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": "2025-06-18",
                     "capabilities": {"tools": {}},
                     "serverInfo": {
                         "name": "model-shunt-mcp",

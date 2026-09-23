@@ -6,3 +6,5 @@ __pycache__/
 *.tmp
 .coverage
 chrome-headless-shell/
+dist/
+node_modules/

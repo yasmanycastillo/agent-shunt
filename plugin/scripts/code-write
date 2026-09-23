@@ -3,7 +3,7 @@
 # Resolve symlinks so the script works when linked into a PATH dir (e.g. ~/.local/bin)
 SELF="$(readlink -f "$0")"
 DIR="$(cd "$(dirname "$SELF")/../.." && pwd)"
-WORKER="$DIR/engine/worker.py"
+WORKER="$DIR/src/model_shunt/worker.py"
 
 spec=""
 reference=""

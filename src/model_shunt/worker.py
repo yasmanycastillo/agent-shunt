@@ -17,7 +17,8 @@ import urllib.error
 
 DEFAULT_CONFIG_PATHS = [
     os.path.expanduser("~/.config/model-shunt/config.json"),
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.json")
+    # repo root when running from a checkout (src/model_shunt/worker.py -> 3 levels up)
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "config.json")
 ]
 
 SYSTEM_PROMPTS = {
