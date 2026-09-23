@@ -1,8 +1,14 @@
-# Model-Shunt 🔀
+# Agent-Shunt 🔀
+
+[![CI Test Suite](https://github.com/yasmanycastillo/agent-shunt/actions/workflows/test.yml/badge.svg)](https://github.com/yasmanycastillo/agent-shunt/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#-key-highlights)
+[![Website Live](https://img.shields.io/badge/website-live-cyan.svg)](https://yasmanycastillo.github.io/agent-shunt/)
 
 A decoupled, zero-dependency, universal implementation of the **Shunt** model-routing pattern (originally conceived by Spotify Engineering).
 
-**Model-Shunt** allows AI coding agents (**Antigravity, Cursor, Windsurf, Claude Code, Aider, OpenHands**, etc.) to delegate token-heavy I/O (bulk file reading/code analysis) and repetitive boilerplate generation (tests, mocks, stubs, configs) to **fast, economical, or local worker models** (Gemini 2.5 Flash, Groq/Llama, Ollama, DeepSeek, GPT-4o-mini). This cuts primary agent token consumption by up to **90%** while keeping the main context window clean.
+**Agent-Shunt** allows AI coding agents (**Antigravity, Cursor, Windsurf, Claude Code, Aider, OpenHands**, etc.) to delegate token-heavy I/O (bulk file reading/code analysis) and repetitive boilerplate generation (tests, mocks, stubs, configs) to **fast, economical, or local worker models** (Gemini 2.5 Flash, Groq/Llama, Ollama, DeepSeek, GPT-4o-mini). This cuts primary agent token consumption by up to **90%** while keeping the main context window clean.
 
 ---
 

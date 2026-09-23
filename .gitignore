@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 *.tmp
 .coverage
+chrome-headless-shell/
