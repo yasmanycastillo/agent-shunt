@@ -406,6 +406,12 @@
         <button onclick="switchTab('windsurf')" id="tab-windsurf" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
           Windsurf / Zed
         </button>
+        <button onclick="switchTab('codex')" id="tab-codex" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
+          Codex
+        </button>
+        <button onclick="switchTab('grok')" id="tab-grok" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
+          Grok
+        </button>
       </div>
 
       <!-- Code Box -->
@@ -578,7 +584,15 @@
         file: "Claude Code plugin (hooks + skills + MCP server)",
         code: `# Install as Claude Code plugin — PreToolUse hooks + skills + MCP server in one\n/plugin marketplace add yasmanycastillo/model-shunt\n/plugin install shunt@model-shunt\n\n# Or register only the MCP server (if you ran install.sh, it is already done)\nclaude mcp add model-shunt -- model-shunt`
       },
-      windsurf: {
+      codex: {
+        file: "~/.codex/config.toml",
+        code: `# Codex CLI (OpenAI) — MCP servers live in config.toml\n[mcp_servers.model-shunt]\ncommand = "model-shunt"\nenv = { "SHUNT_PROVIDER" = "gemini", "SHUNT_MODEL" = "auto", "GEMINI_API_KEY" = "YOUR_API_KEY" }`
+      },
+      grok: {
+        file: "~/.grok/settings.json — mcpServers",
+        code: `\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n`
+      },
+            windsurf: {
         file: "~/.codeium/windsurf/mcp_config.json",
         code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",  // after install.sh (or: uvx model-shunt)\n      "env": {\n        "SHUNT_PROVIDER": "groq",\n        "SHUNT_MODEL": "auto",\n        "GROQ_API_KEY": "YOUR_GROQ_API_KEY"\n      }\n    }\n  }\n}`
       }
