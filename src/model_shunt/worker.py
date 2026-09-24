@@ -507,10 +507,11 @@ def run_bulk_reader(content: str, temperature: float = 0.2,
     """
     max_direct = int(os.environ.get("SHUNT_MAX_DIRECT_TOKENS", "200000"))
     if estimate_tokens(content) <= max_direct:
-        return run_worker(
+        answer = run_worker(
             mode="bulk-reader", content=content, temperature=temperature,
             override_provider=override_provider, override_model=override_model
         )
+        return drop_unverified_citations(answer, content)
 
     chunk_chars = int(os.environ.get("SHUNT_CHUNK_CHARS", "600000"))
     chunks = split_numbered_payload(content, chunk_chars)
@@ -533,10 +534,11 @@ def run_bulk_reader(content: str, temperature: float = 0.2,
     reduce_content += "\n\n".join(
         f"<summary chunk={i}/{k}>\n{s}\n</summary>" for i, s in enumerate(summaries, 1)
     )
-    return _paced_call(
+    answer = _paced_call(
         "bulk-reader", reduce_content, temperature,
         override_provider, override_model, system_prompt_override=REDUCE_SYSTEM
     )
+    return drop_unverified_citations(answer, content)
 
 FILE_BLOCK_RE = re.compile(r'(<file path="[^"]*">\n)(.*?)(\n</file>)', re.DOTALL)
 
@@ -552,6 +554,81 @@ def number_file_lines(payload: str) -> str:
         numbered = "\n".join(f"{i}|{ln}" for i, ln in enumerate(lines, 1))
         return match.group(1) + numbered + match.group(3)
     return FILE_BLOCK_RE.sub(_number, payload)
+
+_CITE_RE = re.compile(
+    r"\(N\|(\d+)\)"
+    r"|N\|(\d+)"
+    r"|\(L(\d+)\)"
+    r"|\((\d+)\|\)"
+    r"|\((\d+)\)"
+)
+_CITE_TOKEN_RE = re.compile(
+    r"(?:`([^`]+)`|\"([^\"]+)\"|'([^']+)'|([A-Za-z_][A-Za-z0-9_]*))\s*$"
+)
+
+def _source_line_index(payload: str) -> dict:
+    """Map each absolute N| line number to the text of that line in every file."""
+    index = {}
+    for match in FILE_BLOCK_RE.finditer(payload):
+        for raw in match.group(2).split("\n"):
+            numbered = re.match(r"^(\d+)\|(.*)$", raw)
+            if not numbered:
+                continue
+            index.setdefault(int(numbered.group(1)), []).append(numbered.group(2))
+    return index
+
+def drop_unverified_citations(answer: str, payload: str) -> str:
+    """Remove name (N|k) citations whose name is not on source line k.
+
+    A citation with no attached name, or whose token never appears in the
+    source, is left alone. A token that does appear, but not on line k, is
+    removed. Line numbers are the absolute prefixes from number_file_lines.
+    The same number in two files is accepted when either line contains the name.
+    """
+    if not answer or not payload:
+        return answer
+    index = _source_line_index(payload)
+    if not index:
+        return answer
+
+    corpus = [row for rows in index.values() for row in rows]
+
+    def token_in_corpus(token: str) -> bool:
+        return any(token in row for row in corpus)
+
+    def token_on_line(token: str, line_no: int) -> bool:
+        rows = index.get(line_no)
+        if not rows:
+            return False
+        return any(token in row for row in rows)
+
+    cleaned = []
+    for line in answer.split("\n"):
+        remove = []
+        for cite in _CITE_RE.finditer(line):
+            line_no = int(next(group for group in cite.groups() if group))
+            token_match = _CITE_TOKEN_RE.search(line[:cite.start()])
+            if not token_match:
+                continue
+            token = next(group for group in token_match.groups() if group)
+            # Prose that never appears in the file is not a symbol citation.
+            if len(token) < 2 or not token_in_corpus(token) or token_on_line(token, line_no):
+                continue
+            remove.append(cite.span())
+        if not remove:
+            cleaned.append(line)
+            continue
+        pieces = []
+        prev = 0
+        for start, end in remove:
+            chunk = line[prev:start]
+            if chunk.endswith(" "):
+                chunk = chunk[:-1]
+            pieces.append(chunk)
+            prev = end
+        pieces.append(line[prev:])
+        cleaned.append("".join(pieces).rstrip())
+    return "\n".join(cleaned)
 
 def main():
     parser = argparse.ArgumentParser(description="Model-Shunt Universal Worker Engine")

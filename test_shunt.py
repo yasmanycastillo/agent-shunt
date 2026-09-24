@@ -272,6 +272,50 @@ def test_mapreduce_chunking():
         assert re.search(r"chars \d+-\d+ of line 1", c), "Char slices must carry a position marker"
     print("  -> Map-reduce chunking passed.")
 
+def test_drop_unverified_citations():
+    print("[9/9] Testing unverified citation filter...")
+    from model_shunt.worker import drop_unverified_citations
+    source = "noise = 1\ndef shunt_marker_alpha():\n    return 1\n"
+    payload = number_file_lines(f'<file path="probe.py">\n{source}</file>\n\nQuestion: where?')
+    kept = drop_unverified_citations("shunt_marker_alpha (N|2)", payload)
+    dropped = drop_unverified_citations("shunt_marker_alpha (N|1)", payload)
+    mixed = drop_unverified_citations(
+        "shunt_marker_alpha (N|2) and shunt_marker_alpha (N|1)", payload
+    )
+    bare = drop_unverified_citations("see (N|2) for context", payload)
+    missing = drop_unverified_citations("shunt_marker_alpha (L99)", payload)
+    assert kept == "shunt_marker_alpha (N|2)", kept
+    assert dropped == "shunt_marker_alpha", dropped
+    assert mixed == "shunt_marker_alpha (N|2) and shunt_marker_alpha", mixed
+    assert bare == "see (N|2) for context", bare
+    assert missing == "shunt_marker_alpha", missing
+    print("  -> Unverified citation filter passed.")
+
+def test_marker_line_contract():
+    print("[9/9] Testing planted-marker citation contract (no API)...")
+    import benchmark
+    source_lines = ["noise = 1", "def shunt_marker_alpha():", "    return 1"]
+    source = "\n".join(source_lines) + "\n"
+    payload = f'<file path="probe.py">\n{source}</file>\n\nQuestion: where?'
+    numbered = number_file_lines(payload)
+    body = numbered.split("<file path=\"probe.py\">\n", 1)[1].split("\n</file>", 1)[0]
+    for idx, raw in enumerate(source_lines, 1):
+        assert body.split("\n")[idx - 1] == f"{idx}|{raw}", body.split("\n")[idx - 1]
+
+    good = "shunt_marker_alpha is defined at (N|2)."
+    bad = "shunt_marker_alpha is defined at (N|1)."
+    mixed = "- shunt_marker_alpha (N|2)\n- noise (N|1)"
+    good_score = benchmark.score_named_citations(good, source, ["shunt_marker_alpha"])
+    bad_score = benchmark.score_named_citations(bad, source, ["shunt_marker_alpha"])
+    mixed_score = benchmark.score_named_citations(mixed, source, ["shunt_marker_alpha"])
+    assert good_score[0]["hits"][0]["symbol_on_line"] is True
+    assert good_score[0]["hits"][0]["line"] == 2
+    assert bad_score[0]["hits"][0]["symbol_on_line"] is False
+    assert bad_score[0]["hits"][0]["line"] == 1
+    assert [hit["line"] for hit in mixed_score[0]["hits"]] == [2]
+    assert benchmark.extract_cited_lines("shunt_marker_alpha (N|2)", "probe.py") == [2]
+    print("  -> Marker line contract passed.")
+
 def test_mapreduce_orchestration():
     print("[8/8] Testing map-reduce orchestration (mocked worker)...")
     lines = "\n".join(f"{i}|code line {i}" for i in range(1, 4001))
@@ -310,5 +354,7 @@ if __name__ == "__main__":
     test_cli_list_models()
     test_path_sandbox()
     test_mapreduce_chunking()
+    test_drop_unverified_citations()
+    test_marker_line_contract()
     test_mapreduce_orchestration()
     print("\nALL VERIFICATION TESTS PASSED SUCCESSFULLY!")

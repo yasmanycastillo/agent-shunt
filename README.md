@@ -97,7 +97,7 @@ export DEEPSEEK_API_KEY="your-api-key"
 Model-Shunt provides a standard stdio MCP server exposing three tools:
 
 1. **`get_available_models(provider?)`**: Discovers live models from the provider endpoint and returns recommended models for reading and code writing.
-2. **`bulk_read(question, file_paths, model?, provider?)`**: Reads large or multiple files and outputs concise, structured bullets with exact line citations.
+2. **`bulk_read(question, file_paths, model?, provider?)`**: Reads large or multiple files and outputs concise, structured bullets with exact line citations. A citation `name (N|k)` is dropped when source line `k` does not contain that name.
 3. **`code_write(spec, reference_path, target_path?, model?, provider?)`**: Replicates patterns, styling, and conventions from a reference file and writes generated code directly to disk without consuming frontier agent output tokens.
 
 #### Installation

@@ -13,7 +13,12 @@ import argparse
 
 # Add package/engine to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from src.model_shunt.worker import run_worker, resolve_settings, number_file_lines
+from src.model_shunt.worker import (
+    estimate_tokens,
+    number_file_lines,
+    resolve_settings,
+    run_bulk_reader,
+)
 
 # Pricing per 1 Million Tokens (Input) as of 2026
 MODEL_PRICING = {
@@ -25,10 +30,6 @@ MODEL_PRICING = {
     "groq-llama-3.3-70b": 0.59,
     "ollama-local": 0.00
 }
-
-def estimate_tokens(text: str) -> int:
-    """Accurate token estimator based on BPE statistics for source code (~3.6 chars/token)."""
-    return max(1, int(len(text) / 3.6))
 
 def extract_cited_lines(text: str, filename: str) -> list:
     """Extract cited line numbers matching patterns like file.py:42, line 42, or [42]."""
@@ -45,15 +46,51 @@ def extract_cited_lines(text: str, filename: str) -> list:
     for match in pat2.finditer(text):
         cites.append(int(match.group(1)))
 
-    # Pattern 3: Prefix N| citations
-    pat3 = re.compile(r"\b(\d+)\|")
+    # Pattern 3: N|81 citations, and echoed source prefixes 81|
+    pat3 = re.compile(r"(?:N\|(\d+)|\b(\d+)\|)")
     for match in pat3.finditer(text):
-        cites.append(int(match.group(1)))
+        cites.append(int(match.group(1) or match.group(2)))
 
     return sorted(list(set(cites)))
 
+def score_named_citations(response: str, source: str, names: list) -> list:
+    """For each expected name, find N| or L citations next to it and check the line.
+
+    A hit counts only when that source line contains the name. A nearby real
+    line of a different construct counts as a miss. This is the check the
+    non-empty-line rate does not do.
+    """
+    lines = source.splitlines()
+    scored = []
+    for name in names:
+        found = []
+        seen = set()
+        for match in re.finditer(re.escape(name), response):
+            line_start = response.rfind("\n", 0, match.start()) + 1
+            line_end = response.find("\n", match.end())
+            if line_end < 0:
+                line_end = len(response)
+            window = response[line_start:line_end]
+            for cited in re.finditer(r"(?:N\||\bL|\()(\d+)", window):
+                line_no = int(cited.group(1))
+                if line_no in seen:
+                    continue
+                seen.add(line_no)
+                text = lines[line_no - 1] if 1 <= line_no <= len(lines) else ""
+                found.append({
+                    "line": line_no,
+                    "symbol_on_line": name in text,
+                    "text": text.strip()[:160],
+                })
+        scored.append({"name": name, "hits": found})
+    return scored
+
 def verify_citations(file_path: str, cited_lines: list) -> tuple:
-    """Check how many cited lines point to non-empty, valid code lines in the source file."""
+    """Count cited lines that exist and are non-empty.
+
+    This is not the manual symbol check in docs/BENCHMARK.md. A real line of the
+    wrong construct still counts as a hit.
+    """
     if not cited_lines or not os.path.isfile(file_path):
         return 0, len(cited_lines), 0.0
 
@@ -65,7 +102,6 @@ def verify_citations(file_path: str, cited_lines: list) -> tuple:
         idx = line_num - 1
         if 0 <= idx < len(file_lines):
             line_content = file_lines[idx].strip()
-            # If line is not purely blank or comment, or within context
             if line_content:
                 valid_cites += 1
 
@@ -100,7 +136,7 @@ def run_benchmark(target_file: str, question: str, provider: str = None, model: 
     print(f"Corpus Metrics:    {line_count:,} lines | {byte_size / 1024:.1f} KB | ~{raw_tokens:,} tokens")
     print(f"Question:          \"{question}\"")
     print("-" * 80)
-    print("Dispatching to Shunt Worker Engine via streaming stdin...")
+    print("Dispatching through run_bulk_reader (same entry as the CLI)...")
 
     # Build XML payload with line numbers
     xml_payload = f'<file path="{target_file}">\n{raw_code}\n</file>\n\nQuestion: {question}'
@@ -109,15 +145,14 @@ def run_benchmark(target_file: str, question: str, provider: str = None, model: 
     # 2. Measure Latency & Execute
     t_start = time.perf_counter()
     try:
-        response = run_worker(
-            mode="bulk-reader",
+        response = run_bulk_reader(
             content=xml_payload,
             override_provider=provider,
             override_model=model
         )
     except Exception as e:
         print(f"\nExecution Failed: {e}")
-        return
+        return None
     t_end = time.perf_counter()
     latency = t_end - t_start
 
@@ -154,10 +189,11 @@ def run_benchmark(target_file: str, question: str, provider: str = None, model: 
     print(f"🔥 Context Tokens Saved:      {token_saved:,} tokens")
     print(f"⚡ Token Reduction Ratio:     {compression_ratio:.2f}% CONTEXT SAVED")
     print("-" * 80)
-    print("🎯 CITATION ACCURACY (GROUND-TRUTH CHECK)")
+    print("🎯 CITED LINES THAT EXIST AND ARE NON-EMPTY")
+    print("   This does not check that the line contains the claimed symbol.")
     print(f"   Cited Line References:    {total_cites} detected")
-    print(f"   Verified Valid in Source: {valid_cites} / {total_cites}")
-    print(f"   Citation Precision Rate:  {cite_accuracy:.1f}%")
+    print(f"   Non-empty source lines:   {valid_cites} / {total_cites}")
+    print(f"   Non-empty hit rate:       {cite_accuracy:.1f}%")
     print("-" * 80)
     print("💰 COST PER INVOCATION & AT SCALE (1,000 reads/month)")
     print(f"   Direct Claude 3.7 Sonnet: ${cost_claude:.4f} / call  ->  ${cost_claude * 1000:,.2f} / month")
@@ -169,15 +205,95 @@ def run_benchmark(target_file: str, question: str, provider: str = None, model: 
     print("-" * 80)
     print(response)
     print("-" * 80)
+    return response
+
+MARKER_NAMES = ("shunt_marker_alpha", "shunt_marker_beta", "shunt_marker_gamma")
+
+def write_marker_fixture(path: str) -> dict:
+    """Plant three uniquely named defs at known lines, with noise between them.
+
+    The names do not occur anywhere else, so a citation can be checked exactly.
+    """
+    lines = [f"NOISE_{i} = {i}  # padding so the defs are not at the top" for i in range(1, 81)]
+    expected = {}
+    lines.append("def shunt_marker_alpha():")
+    expected["shunt_marker_alpha"] = len(lines)
+    lines.append("    return 'alpha-unique'")
+    lines.extend(f"GAP_A_{i} = {i}" for i in range(120))
+    lines.append("def shunt_marker_beta(value):")
+    expected["shunt_marker_beta"] = len(lines)
+    lines.append("    return value + '-beta-unique'")
+    lines.extend(f"GAP_B_{i} = {i}" for i in range(150))
+    lines.append("class ShuntProbe:")
+    lines.append("    def shunt_marker_gamma(self):")
+    expected["shunt_marker_gamma"] = len(lines)
+    lines.append("        return 'gamma-unique'")
+    lines.append("")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines))
+    return expected
+
+def run_marker_probe(provider: str = None, model: str = None) -> int:
+    """Live check: the worker must cite the planted def, not a nearby noise line."""
+    fixture = os.path.join("/tmp", "shunt-marker-probe.py")
+    expected = write_marker_fixture(fixture)
+    question = (
+        "State the exact source line of each definition. "
+        "Use the form name (N|<line>) and cite no other line for that name. "
+        "The names are shunt_marker_alpha, shunt_marker_beta, and shunt_marker_gamma."
+    )
+    print("MARKER PROBE — symbol must sit on the cited line")
+    for name, line_no in expected.items():
+        print(f"  planted {name} at L{line_no}")
+    with open(fixture, "r", encoding="utf-8") as handle:
+        source = handle.read()
+    response = run_benchmark(fixture, question, provider, model)
+    if not response:
+        print("PROBE FAILED: no response")
+        return 1
+    rows = evaluate_marker_response(response, source, expected)
+    print("MARKER SCORE")
+    failed = False
+    for row in rows:
+        status = "OK" if row["ok"] else "MISS"
+        if not row["ok"]:
+            failed = True
+        detail = ", ".join(
+            f"L{hit['line']} {'symbol' if hit['symbol_on_line'] else 'NO symbol'}"
+            for hit in row["hits"]
+        ) or "no citation"
+        print(f"  {status} {row['name']} want L{row['want']} got {detail}")
+    return 1 if failed else 0
+
+def evaluate_marker_response(response: str, source: str, expected: dict) -> list:
+    scored = score_named_citations(response, source, list(expected))
+    rows = []
+    for item in scored:
+        name = item["name"]
+        want = expected[name]
+        exact = [h for h in item["hits"] if h["line"] == want and h["symbol_on_line"]]
+        wrong = [h for h in item["hits"] if not (h["line"] == want and h["symbol_on_line"])]
+        rows.append({
+            "name": name,
+            "want": want,
+            "ok": bool(exact) and not wrong,
+            "hits": item["hits"],
+        })
+    return rows
 
 def main():
     parser = argparse.ArgumentParser(description="Model-Shunt Benchmark")
-    parser.add_argument("--file", type=str, required=True, help="Path to source file to benchmark")
+    parser.add_argument("--file", type=str, help="Path to source file to benchmark")
     parser.add_argument("--question", type=str, default="How does the document state machine work, and what are the main methods for sending and validating?", help="Question to test")
     parser.add_argument("--provider", type=str, default=None, help="LLM Provider (gemini, groq, etc.)")
     parser.add_argument("--model", type=str, default=None, help="LLM Model")
+    parser.add_argument("--probe", action="store_true", help="Run the planted-marker citation probe")
     args = parser.parse_args()
 
+    if args.probe:
+        raise SystemExit(run_marker_probe(args.provider, args.model))
+    if not args.file:
+        parser.error("--file is required unless --probe is set")
     run_benchmark(args.file, args.question, args.provider, args.model)
 
 if __name__ == "__main__":
