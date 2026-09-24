@@ -15,6 +15,7 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model_shunt.worker import (
     run_worker,
+    run_bulk_reader,
     clean_markdown_fences,
     number_file_lines,
     is_binary_file,
@@ -182,8 +183,7 @@ def handle_bulk_read(arguments):
     full_payload = number_file_lines(full_payload)
 
     try:
-        ans = run_worker(
-            mode="bulk-reader",
+        ans = run_bulk_reader(
             content=full_payload,
             override_provider=provider,
             override_model=model
@@ -271,7 +271,7 @@ def main():
                     "capabilities": {"tools": {}},
                     "serverInfo": {
                         "name": "model-shunt-mcp",
-                        "version": "1.1.2"
+                        "version": "1.2.0"
                     }
                 }
             })

@@ -23,6 +23,7 @@ A decoupled, zero-dependency, universal implementation of the **Shunt** model-ro
 * **Deterministic Line Numbering (`N|`):** Automatically prefixes every line in file blocks with its 1-based index, forcing worker models to cite verifiable, exact line numbers instead of hallucinating locations.
 * **Binary File Protection:** Inspects byte headers to reject binary files (PDFs, images, compiled objects) before sending them to the LLM.
 * **Network Resilience:** Automatic exponential backoff retries for rate limits (HTTP 429) and transient server errors (HTTP 503/502), with configurable timeouts and token limits.
+* **Map-Reduce for Oversized Corpora:** When a `bulk_read` payload exceeds the direct limit (`SHUNT_MAX_DIRECT_TOKENS`, default ~200k tokens), Model-Shunt automatically splits the corpus into chunks, maps the question over each chunk (preserving absolute `N|` line numbers), and reduces the extracts into one cited answer. Giant single-line files (minified JSON/JS) are sliced by characters with explicit position markers. Rate-limit pacing waits out provider quota windows instead of failing.
 
 ---
 
@@ -130,6 +131,15 @@ claude mcp add model-shunt -- uvx model-shunt
 > **Fallback (offline / no uv / no npx):** run straight from a clone with Python 3.9+ — replace `"command"`/`"args"` with `"command": "python3", "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"]`.
 
 > **Security:** by default `bulk_read`/`code_write` only operate on files inside the server's working directory (the agent workspace). Set `SHUNT_ALLOWED_ROOTS` (PATH-style list) to expand the sandbox.
+
+### Map-Reduce Tuning (optional)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SHUNT_MAX_DIRECT_TOKENS` | `200000` | Payloads above this estimated size switch to map-reduce |
+| `SHUNT_CHUNK_CHARS` | `600000` | Chunk size in characters (~150k tokens) |
+| `SHUNT_CHUNK_RETRIES` | `3` | Retries per chunk on rate limits |
+| `SHUNT_CHUNK_RETRY_DELAY` | `60` | Seconds to wait out a provider quota window (free-tier TPM) |
 
 ---
 

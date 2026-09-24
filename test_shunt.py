@@ -6,14 +6,20 @@ Verifies engine resolution, model discovery, binary checks, hooks, and MCP stdio
 import sys
 import os
 import json
+import re
 import subprocess
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+import model_shunt.worker as worker_mod
 from model_shunt.worker import (
     resolve_settings,
     clean_markdown_fences,
     is_binary_file,
     get_best_model,
+    number_file_lines,
+    estimate_tokens,
+    split_numbered_payload,
+    run_bulk_reader,
     RECOMMENDED_MODELS
 )
 
@@ -230,6 +236,72 @@ def test_cli_list_models():
     assert "Recommended Writer Model" in res.stdout
     print("  -> CLI --list-models passed.")
 
+def test_mapreduce_chunking():
+    print("[7/8] Testing map-reduce payload chunking (deterministic)...")
+    # Two small files + question: grouped whole-file chunks
+    payload = (
+        '<file path="a.py">\n1|x\n2|y\n</file>\n\n'
+        '<file path="b.py">\n1|z\n2|w\n</file>\n\n'
+        'Question: what?'
+    )
+    chunks = split_numbered_payload(payload, chunk_chars=1000)
+    assert len(chunks) == 1, f"Small corpus should stay in one chunk, got {len(chunks)}"
+    assert "Question: what?" in chunks[0], "Question must ride along with the chunk"
+
+    # A single file bigger than the budget must split WITHOUT losing/duplicating N| lines
+    big_lines = "\n".join(f"{i}|line {i} padding padding padding" for i in range(1, 501))
+    big_payload = f'<file path="big.py">\n{big_lines}\n</file>\n\nQuestion: q?'
+    chunks = split_numbered_payload(big_payload, chunk_chars=4000)
+    assert len(chunks) > 3, f"Expected multiple chunks, got {len(chunks)}"
+    all_numbered = []
+    for c in chunks:
+        assert c.startswith('<file path="big.py">'), "chunks must re-wrap in the same file block"
+        for ln in c.split("\n"):
+            m = re.match(r"^(\d+)\|", ln)
+            if m:
+                all_numbered.append(int(m.group(1)))
+    assert all_numbered == list(range(1, 501)), (
+        f"Line numbers must be complete, ordered, unique: got {len(all_numbered)} lines")
+
+    # A single gigantic LINE must split by characters with explicit markers
+    giant = "z" * 20000
+    one_line = f'<file path="min.json">\n1|{giant}\n</file>\n\nQuestion: q?'
+    chunks = split_numbered_payload(one_line, chunk_chars=5000)
+    assert len(chunks) >= 4, f"Giant single line must split by chars, got {len(chunks)}"
+    for c in chunks:
+        assert re.search(r"chars \d+-\d+ of line 1", c), "Char slices must carry a position marker"
+    print("  -> Map-reduce chunking passed.")
+
+def test_mapreduce_orchestration():
+    print("[8/8] Testing map-reduce orchestration (mocked worker)...")
+    lines = "\n".join(f"{i}|code line {i}" for i in range(1, 4001))
+    payload = f'<file path="huge.py">\n{lines}\n</file>\n\nQuestion: Where is the parser?'
+    os.environ["SHUNT_MAX_DIRECT_TOKENS"] = "10"     # force map-reduce
+    os.environ["SHUNT_CHUNK_CHARS"] = str(20 * 1024)  # chunk by chars
+    calls = []
+    original = worker_mod.run_worker
+    def fake_run_worker(mode, content, **kwargs):
+        calls.append(content)
+        if "Extract every fact" in content or content.startswith("<file"):
+            return f"* fact from chunk {len(calls)} (N|123)"
+        return "* FINAL SYNTHESIS (N|123)"
+    worker_mod.run_worker = fake_run_worker
+    try:
+        result = run_bulk_reader(payload, override_provider="gemini", override_model="m")
+    finally:
+        worker_mod.run_worker = original
+        os.environ.pop("SHUNT_MAX_DIRECT_TOKENS", None)
+        os.environ.pop("SHUNT_CHUNK_CHARS", None)
+    map_calls = [c for c in calls if "Extract every fact" in c]
+    reduce_calls = [c for c in calls if "FINAL SYNTHESIS" not in c and "Extract every fact" not in c]
+    assert len(map_calls) >= 2, f"Expected >=2 map calls, got {len(map_calls)}"
+    assert len(reduce_calls) == 1, f"Expected exactly 1 reduce call, got {len(reduce_calls)}"
+    assert "chunk 1/2" in map_calls[0] or "chunk 1/" in map_calls[0], "Map prompt must carry chunk numbering"
+    assert all("Question: Where is the parser?" in c for c in map_calls), "Every map call must carry the question"
+    assert "FINAL SYNTHESIS" in result, f"Reduce output must be returned, got: {result[:80]}"
+    assert any("N|123" in c for c in calls), "Citations must survive into reduce"
+    print("  -> Map-reduce orchestration passed.")
+
 if __name__ == "__main__":
     test_engine_resolution()
     test_binary_detection()
@@ -237,4 +309,6 @@ if __name__ == "__main__":
     test_mcp_server()
     test_cli_list_models()
     test_path_sandbox()
+    test_mapreduce_chunking()
+    test_mapreduce_orchestration()
     print("\nALL VERIFICATION TESTS PASSED SUCCESSFULLY!")

@@ -1,0 +1,66 @@
+*   **Test Case Structure**
+    *   The test cases are defined within the `TestSwissdecTestCases` class.
+    *   This class inherits from `TestSwissdecCommon`, indicating a common base setup and utility methods.
+    *   Each specific test scenario is implemented as a method prefixed with `test_tfXX_` (e.g., `test_tf01_herz_monica`) or `test_avs_retirement_franchise_XX` (e.g., `test_avs_retirement_franchise_01`).
+    *   Each test method typically includes a docstring outlining its objectives.
+
+*   **CSV Files Loaded**
+    *   The provided file does not explicitly show any CSV files being loaded. The setup for test data, which might involve loading CSVs, is likely handled in the `TestSwissdecCommon` base class or its setup methods, which are not included in this file.
+
+*   **Key Test Methods**
+    *   `test_tf01_herz_monica` (L13)
+    *   `test_tf02_paganini_maria` (L35)
+    *   `test_tf03_lusser_pia` (L85)
+    *   `test_tf04_frankhauser_markus` (L128)
+    *   `test_tf05_moser_johann` (L174)
+    *   `test_tf06_zahnd_anita` (L221)
+    *   `test_tf07_burri_heidi` (L261)
+    *   `test_tf08_lamon_rene` (L279)
+    *   `test_tf09_estermann_michael` (L330)
+    *   `test_tf10_ganz_heinz` (L375)
+    *   `test_tf11_bosshard_peter` (L417)
+    *   `test_tf12_casanova_renato` (L467)
+    *   `test_tf13_combertaldi_renato` (L509)
+    *   `test_tf14_egli_anna` (L560)
+    *   `test_tf15_degelo_lorenz` (L620)
+    *   `test_tf16_aebi_anna` (L635)
+    *   `test_tf17_bingelli_fritz` (L661)
+    *   `test_tf18_blanc_pierre` (L704)
+    *   `test_tf19_andrey_melanie` (L756)
+    *   `test_tf20_arnold_lukas` (L799)
+    *   `test_tf21_meier_christian` (L816)
+    *   `test_tf22_bucher_elisabeth` (L833)
+    *   `test_tf23_koller_ludwig` (L883)
+    *   `test_tf24_Utzinger_Jan` (L928)
+    *   `test_tf25_lehmann_nadine` (L972)
+    *   `test_tf26_jenzer_marcel` (L995)
+    *   `test_tf27_rast_eva` (L1018)
+    *   `test_tf28_arbenz_esther` (L1050)
+    *   `test_tf29_forster_moreno` (L1099)
+    *   `test_tf30_muller_heinrich` (L1152)
+    *   `test_tf31_bolleto_franca` (L1193)
+    *   `test_tf32_armanini_laura` (L1238)
+    *   `test_tf33_chatelain_pierre` (L1265)
+    *   `test_tf34_rinaldi_massimo` (L1312)
+    *   `test_tf35_roos_roland` (L1359)
+    *   `test_tf36_maldini_fabio` (L1406)
+    *   `test_tf37_oberli_christine` (L1454)
+    *   `test_tf38_jung_claude` (L1464)
+    *   `test_tf39_hasler_harald` (L1508)
+    *   `test_tf40_farine_corine` (L1551)
+    *   `test_tf41_meier_max` (L1583)
+    *   `test_tf42_peters_otto` (L1606)
+    *   `test_tf43_ochsenbein_lea` (L1616)
+    *   `test_avs_retirement_franchise_01` (L1626)
+    *   `test_avs_retirement_franchise_02` (L1803)
+    *   `test_avs_retirement_franchise_03` (L2057)
+    *   `test_avs_retirement_franchise_04` (L2288)
+    *   `test_avs_retirement_franchise_05` (L2574)
+    *   `test_avs_retirement_franchise_06` (L2768)
+
+*   **Validation of Expected Salary Outcome**
+    *   The expected salary outcome for each payslip is validated by calling `self._validate_payslip()`.
+    *   This method takes two primary arguments:
+        *   A payslip object (e.g., `self.payslip_tf01_2022_01`).
+        *   A dictionary (`payslip_results`) containing key-value pairs where keys are payroll rule codes (e.g., 'AVSBASE', 'GROSS', 'NET') and values are their expected numerical results.
+    *   For some `test_avs_retirement_franchise_XX` methods, an additional `skip_lines=True` argument is passed to `_validate_payslip`, indicating that only specific lines (defined in `payslip_results`) should be validated, rather than all payslip lines.

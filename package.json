@@ -1,6 +1,7 @@
 {
   "name": "model-shunt",
-  "version": "1.1.2",
+  "version": "1.2.0",
+  "mcpName": "io.github.yasmanycastillo/model-shunt",
   "description": "Model routing for AI coding agents - delegate bulk file reading and boilerplate generation to fast, economical worker models via MCP. Zero Python dependencies.",
   "license": "MIT",
   "repository": {

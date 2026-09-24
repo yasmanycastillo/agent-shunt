@@ -325,10 +325,11 @@ def run_worker(
     content: str,
     temperature: float = 0.2,
     override_provider: str = None,
-    override_model: str = None
+    override_model: str = None,
+    system_prompt_override: str = None
 ) -> str:
     settings = resolve_settings(override_provider=override_provider, override_model=override_model)
-    system_prompt = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["bulk-reader"])
+    system_prompt = system_prompt_override or SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["bulk-reader"])
 
     model = settings["model"]
     # If auto model requested
@@ -361,6 +362,181 @@ def clean_markdown_fences(text: str) -> str:
     if lines and lines[-1].strip() == "```":
         lines = lines[:-1]
     return "\n".join(lines).strip()
+
+
+# ---------------------------------------------------------------------------
+# Map-reduce for oversized corpora
+# ---------------------------------------------------------------------------
+
+def estimate_tokens(text: str) -> int:
+    """Rough token estimate (~4 chars per token) used for routing decisions."""
+    return len(text) // 4
+
+def _extract_question(payload: str):
+    """Split a numbered payload into (file_blocks, question).
+
+    The payload convention (CLI and MCP server) is a sequence of
+    <file path="...">...</file> blocks followed by a trailing 'Question:' line.
+    """
+    blocks = []
+    pos = 0
+    for match in FILE_BLOCK_RE.finditer(payload):
+        blocks.append((payload[pos:match.start()], match.group(0)))
+        pos = match.end()
+    question = payload[pos:].strip()
+    return blocks, question
+
+def _split_block(path: str, numbered_body: str, budget: int) -> list:
+    """Split one numbered file body into pieces of ~budget chars.
+
+    Keeps whole lines together when possible; slices single gigantic lines by
+    characters with an explicit position marker so citations stay honest.
+    """
+    if len(numbered_body) <= budget:
+        return [numbered_body]
+    lines = numbered_body.split("\n")
+    if max(len(ln) for ln in lines) > budget:
+        # One or more giant single lines: slice by characters.
+        pieces = []
+        for idx, ln in enumerate(lines, 1):
+            if len(ln) <= budget:
+                pieces.append(ln)
+                continue
+            for start in range(0, len(ln), budget):
+                seg = ln[start:start + budget]
+                pieces.append(f"{idx}|[chars {start}-{start + len(seg) - 1} of line {idx}] {seg}")
+        # Re-group tiny char slices to avoid one chunk per slice
+        groups, cur, size = [], [], 0
+        for p in pieces:
+            if cur and size + len(p) + 1 > budget:
+                groups.append("\n".join(cur))
+                cur, size = [], 0
+            cur.append(p)
+            size += len(p) + 1
+        if cur:
+            groups.append("\n".join(cur))
+        return groups
+    # Normal multi-line file: pack whole lines into budget-sized groups
+    groups, cur, size = [], [], 0
+    for ln in lines:
+        if cur and size + len(ln) + 1 > budget:
+            groups.append("\n".join(cur))
+            cur, size = [], 0
+        cur.append(ln)
+        size += len(ln) + 1
+    if cur:
+        groups.append("\n".join(cur))
+    return groups
+
+def split_numbered_payload(payload: str, chunk_chars: int) -> list:
+    """Split a numbered payload into chunks of ~chunk_chars.
+
+    Consecutive small file blocks are grouped into shared chunks; large files
+    are split by lines (preserving their absolute 'N|' numbers verbatim) and
+    gigantic single lines by characters (with explicit markers). Every chunk
+    carries the trailing Question so each map call is self-contained.
+    """
+    blocks, question = _extract_question(payload)
+    pieces = []  # (chars, render)
+    for separator, block in blocks:
+        match = FILE_BLOCK_RE.match(block)
+        path = re.search(r'path="([^"]*)"', match.group(1)).group(1)
+        body = match.group(2)
+        for part in _split_block(path, body, chunk_chars):
+            pieces.append((len(part) + 40, f'<file path="{path}">\n{part}\n</file>'))
+    chunks, cur, size = [], [], 0
+    for plen, rendered in pieces:
+        if cur and size + plen > chunk_chars:
+            chunks.append("\n\n".join(cur))
+            cur, size = [], 0
+        cur.append(rendered)
+        size += plen
+    if cur:
+        chunks.append("\n".join(cur))
+    if question:
+        chunks = [c + "\n\n" + question for c in chunks]
+    return chunks
+
+MAP_ADDENDUM = (
+    "[chunk {i}/{k} of a larger corpus] "
+    "Extract every fact relevant to the question from THIS chunk only, "
+    "with exact 'N|' line citations. Never guess line numbers."
+)
+
+REDUCE_SYSTEM = (
+    "You are a precise code analyst. You receive extraction summaries from several "
+    "chunks of one large corpus, each with verbatim 'N|' line citations. Synthesize a "
+    "single final answer to the question. Preserve the original citations exactly as "
+    "given — never invent, merge, or renumber them. Output structured bullets only, "
+    "no preamble."
+)
+
+def _paced_call(mode, content, temperature, override_provider, override_model, system_prompt_override=None):
+    """Call run_worker; on provider rate-limit (HTTP 429) wait out the quota window.
+
+    Free tiers enforce tokens-per-minute quotas that a map-reduce fan-out can
+    trip even when each chunk is within limits, so pace instead of failing.
+    """
+    retries = int(os.environ.get("SHUNT_CHUNK_RETRIES", "3"))
+    delay = float(os.environ.get("SHUNT_CHUNK_RETRY_DELAY", "60"))
+    for attempt in range(retries + 1):
+        try:
+            return run_worker(
+                mode=mode, content=content, temperature=temperature,
+                override_provider=override_provider, override_model=override_model,
+                system_prompt_override=system_prompt_override
+            )
+        except RuntimeError as e:
+            if attempt < retries and "429" in str(e):
+                sys.stderr.write(
+                    f"[model-shunt] Rate limit hit (chunk {attempt + 1}/{retries}); "
+                    f"waiting {delay:.0f}s for quota window\n"
+                )
+                time.sleep(delay)
+                continue
+            raise
+
+def run_bulk_reader(content: str, temperature: float = 0.2,
+                    override_provider: str = None, override_model: str = None) -> str:
+    """bulk-reader entry point with automatic map-reduce for oversized corpora.
+
+    Below SHUNT_MAX_DIRECT_TOKENS (default 200k est. tokens) the corpus goes
+    out in a single call as before. Above it, the corpus is split into chunks
+    (SHUNT_CHUNK_CHARS, default 600k chars ~ 150k tokens), each chunk is
+    mapped with the question, and the summaries are reduced into one answer.
+    """
+    max_direct = int(os.environ.get("SHUNT_MAX_DIRECT_TOKENS", "200000"))
+    if estimate_tokens(content) <= max_direct:
+        return run_worker(
+            mode="bulk-reader", content=content, temperature=temperature,
+            override_provider=override_provider, override_model=override_model
+        )
+
+    chunk_chars = int(os.environ.get("SHUNT_CHUNK_CHARS", "600000"))
+    chunks = split_numbered_payload(content, chunk_chars)
+    k = len(chunks)
+    sys.stderr.write(
+        f"[model-shunt] Corpus exceeds direct limit ({estimate_tokens(content)} est. tokens); "
+        f"map-reduce over {k} chunks of ~{chunk_chars} chars\n"
+    )
+    summaries = []
+    for i, chunk in enumerate(chunks, 1):
+        map_content = chunk + "\n\n" + MAP_ADDENDUM.format(i=i, k=k)
+        summaries.append(_paced_call(
+            "bulk-reader", map_content, temperature,
+            override_provider, override_model
+        ))
+    reduce_content = ""
+    blocks, question = _extract_question(content)
+    if question:
+        reduce_content += question + "\n\n"
+    reduce_content += "\n\n".join(
+        f"<summary chunk={i}/{k}>\n{s}\n</summary>" for i, s in enumerate(summaries, 1)
+    )
+    return _paced_call(
+        "bulk-reader", reduce_content, temperature,
+        override_provider, override_model, system_prompt_override=REDUCE_SYSTEM
+    )
 
 FILE_BLOCK_RE = re.compile(r'(<file path="[^"]*">\n)(.*?)(\n</file>)', re.DOTALL)
 
@@ -417,12 +593,18 @@ def main():
 
     if args.mode == "bulk-reader":
         content = number_file_lines(content)
-
-    result = run_worker(
-        mode=args.mode,
-        content=content,
-        temperature=args.temperature,
-        override_provider=args.provider,
+        result = run_bulk_reader(
+            content=content,
+            temperature=args.temperature,
+            override_provider=args.provider,
+            override_model=model_override
+        )
+    else:
+        result = run_worker(
+            mode=args.mode,
+            content=content,
+            temperature=args.temperature,
+            override_provider=args.provider,
         override_model=model_override
     )
 

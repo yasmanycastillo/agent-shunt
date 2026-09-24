@@ -1,0 +1,12 @@
+*   **Method calls on variables resolution**
+    *   The `TypeChecker` delegates expression checking, including method calls, to its `_expr_checker` attribute, an instance of `mypy.checkexpr.ExpressionChecker`.
+    *   The process generally involves:
+        *   `mypy.checkmember.analyze_member_access` (N|86) or `mypy.checkexpr.ExpressionChecker.analyze_external_member_access` (N|2028) to determine the type of the method itself (the callable).
+        *   `mypy.checkexpr.ExpressionChecker.check_call` (N|2838, N|5775) to type-check the arguments passed to the method against its signature.
+    *   Examples of `TypeChecker` methods that use `self.expr_checker` for method call resolution include `check_async_with_item` (N|5900), `check_with_item` (N|5908), `analyze_async_iterable_item_type` (N|5602), `analyze_iterable_item_type_without_expression` (N|5635), and `check_indexed_assignment` (N|5050).
+
+*   **Main entry point for checking a function body**
+    *   The `TypeChecker.check_func_item` method (N|1349) is the primary orchestrator for type-checking a function or method. It sets up the necessary scope and return type context.
+    *   Within `check_func_item`, the actual traversal and type-checking of the function's statements begins with `self.accept(item.body)` (N|1551).
+    *   Since `item.body` is typically a `Block` node, `self.accept` dispatches to `TypeChecker.visit_block` (N|3256).
+    *   `TypeChecker.visit_block` then iterates through each statement in the function body, calling `self.accept(s)` for each statement `s` (N|3275), which recursively processes the AST.

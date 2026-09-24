@@ -1,6 +1,6 @@
 {
   "name": "shunt",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Model routing plugin for Claude Code - intercepts bulky file reads and repetitive code generation, delegating to fast, economical worker models",
   "author": {
     "name": "Model-Shunt"
