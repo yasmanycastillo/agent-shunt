@@ -8,3 +8,4 @@ __pycache__/
 chrome-headless-shell/
 dist/
 node_modules/
+.claude/
