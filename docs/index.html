@@ -81,6 +81,7 @@
       <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
         <a href="#how-it-works" class="hover:text-brand-400 transition-colors">How It Works</a>
         <a href="#calculator" class="hover:text-brand-400 transition-colors">Savings Calculator</a>
+        <a href="#benchmark" class="hover:text-brand-400 transition-colors">Benchmark</a>
         <a href="#setup" class="hover:text-brand-400 transition-colors">Quick Setup</a>
         <a href="#features" class="hover:text-brand-400 transition-colors">Features</a>
       </nav>
@@ -298,6 +299,69 @@
           </div>
 
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Real-World Verified Benchmark -->
+  <section id="benchmark" class="py-20 px-6 border-t border-white/5 relative">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">Real Files. Verified Citations.</h2>
+        <p class="text-slate-400 text-sm max-w-2xl mx-auto font-light">Every benchmark below ran against real corpora (local repos + live API downloads). Every claimed line citation was re-checked against the source — and factual claims were validated by parsing the files independently.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6 mb-8">
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono uppercase tracking-wider text-brand-400 font-semibold">mypy checker.py</span>
+            <span class="text-xs px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/20">10.8 s</span>
+          </div>
+          <div class="font-mono text-3xl font-extrabold text-white mb-2">446 KB</div>
+          <div class="text-xs text-slate-400 mb-4 font-mono">~111k tokens · via MCP protocol</div>
+          <ul class="text-xs text-slate-300 space-y-2 font-mono">
+            <li><span class="text-emerald-400">✓</span> 8/9 line citations exact</li>
+            <li><span class="text-emerald-400">✓</span> 1 within ±2 lines (import block)</li>
+            <li><span class="text-emerald-400">✓</span> Type-inference flow mapped end-to-end</li>
+          </ul>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono uppercase tracking-wider text-brand-400 font-semibold">npm registry d3</span>
+            <span class="text-xs px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/20">8.3 s</span>
+          </div>
+          <div class="font-mono text-3xl font-extrabold text-white mb-2">733 KB · 1 line</div>
+          <div class="text-xs text-slate-400 mb-4 font-mono">~183k tokens · minified JSON torture test</div>
+          <ul class="text-xs text-slate-300 space-y-2 font-mono">
+            <li><span class="text-emerald-400">✓</span> 100% ground-truth match</li>
+            <li><span class="text-emerald-400">✓</span> 30/30 dependencies, exact set</li>
+            <li><span class="text-emerald-400">✓</span> Version + license correct</li>
+          </ul>
+        </div>
+
+        <div class="card-glass p-6 rounded-xl neon-border">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono uppercase tracking-wider text-brand-400 font-semibold">K8s OpenAPI spec</span>
+            <span class="text-xs px-2 py-1 rounded bg-brand-500/10 text-brand-300 font-mono border border-brand-500/20">map-reduce</span>
+          </div>
+          <div class="font-mono text-3xl font-extrabold text-white mb-2">4.5 MB</div>
+          <div class="text-xs text-slate-400 mb-4 font-mono">~1.29M tokens · 9 chunks · v1.2.0</div>
+          <ul class="text-xs text-slate-300 space-y-2 font-mono">
+            <li><span class="text-emerald-400">✓</span> 4/4 claims verified 100%</li>
+            <li><span class="text-emerald-400">✓</span> required fields at exact lines 4690/4691</li>
+            <li><span class="text-emerald-400">✓</span> Citations survive across 9 chunks</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="text-center">
+        <p class="text-xs text-slate-500 font-mono">
+          Binary files (PDF, images, wheels) are rejected before any API call · Full methodology:
+          <a href="https://github.com/yasmanycastillo/model-shunt/blob/main/docs/BENCHMARK.md" target="_blank" rel="noopener noreferrer" class="text-brand-400 hover:text-brand-300 transition-colors underline underline-offset-2">docs/BENCHMARK.md</a>
+        </p>
       </div>
     </div>
   </section>
