@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="shuntGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#090d16"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#06b6d4" stroke-opacity="0.35" stroke-width="1.5"/>
+  <!-- input -->
+  <path d="M11 32 H26" stroke="#f1f5f9" stroke-width="5.5" stroke-linecap="round"/>
+  <!-- shunt: main route -->
+  <path d="M26 32 C 34 32, 36 21, 45 20" stroke="url(#shuntGrad)" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <!-- shunt: bypass route -->
+  <path d="M26 32 C 34 32, 36 43, 45 44" stroke="#34d399" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <!-- arrowheads -->
+  <polygon points="43,13.5 53.5,20 43,26.5" fill="url(#shuntGrad)"/>
+  <polygon points="43,37.5 53.5,44 43,50.5" fill="#34d399"/>
+</svg>
