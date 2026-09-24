@@ -274,9 +274,22 @@
             <div>
               <label for="primaryModelSelect" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Primary Agent Model</label>
               <select id="primaryModelSelect" class="w-full bg-slate-900/90 border border-white/10 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-brand-500 focus:outline-none">
-                <option value="3.00">Claude 3.7 Sonnet ($3.00 / MTok in)</option>
-                <option value="2.50">GPT-4o ($2.50 / MTok in)</option>
-                <option value="3.00">Claude 3.5 Sonnet ($3.00 / MTok in)</option>
+                <optgroup label="Anthropic">
+                  <option value="4.00" selected>Claude Opus 5.5 ($4.00 / MTok in)</option>
+                  <option value="2.00">Claude Sonnet 5 ($2.00 / MTok in)</option>
+                  <option value="10.00">Claude Fable 5.1 ($10.00 / MTok in)</option>
+                </optgroup>
+                <optgroup label="OpenAI">
+                  <option value="2.00">GPT-6 Sol ($2.00 / MTok in)</option>
+                  <option value="10.00">GPT-6 Astra ($10.00 / MTok in)</option>
+                  <option value="1.75">GPT-5.3 Codex ($1.75 / MTok in)</option>
+                </optgroup>
+                <optgroup label="Google">
+                  <option value="2.00">Gemini 3.1 Pro ($2.00 / MTok in)</option>
+                </optgroup>
+                <optgroup label="xAI">
+                  <option value="2.00">Grok 4.7 ($2.00 / MTok in)</option>
+                </optgroup>
               </select>
             </div>
 
