@@ -13,7 +13,14 @@ September 23, 2026. Worker: `gemini-2.5-flash` (free tier, `SHUNT_MODEL=auto`).
 | T4 | Kubernetes OpenAPI `swagger.json` | 4.5 MB | 110,426 | ~1.29M | CLI (v1.1.3, direct) | 17.4 s (retries) | ❌ HTTP 429 — exceeds free-tier tokens-per-minute quota |
 | T4b | Same `swagger.json` — **map-reduce (v1.2.0)** | 4.5 MB | 110,426 | ~1.29M | CLI, 9 chunks | ~2.5 min (1 quota wait) | ✅ **4/4 claims verified 100%**: `required: [schedule, jobTemplate]` at exact lines N\|4690/N\|4691, group `batch` N\|60211, `swagger: 2.0` N\|110425 |
 | T5 | SQLite amalgamation `sqlite3.c` | 9 MB | 255,680 | ~2.25M | CLI | 21.4 s (retries) | ❌ HTTP 429 — exceeds free-tier tokens-per-minute quota (map-reduce removes this; ~16 chunks on free tier) |
+| T5b | SQLite amalgamation — **map-reduce (v1.2.0)** | 9 MB | 255,680 | ~2.67M | CLI, 18 chunks | ~6 min (4 quota waits) | ⚠️ Architecture answer 100% correct (`sqlite3RunParser`, `sqlite3GetToken`, `sLastToken`, `pzTail` loop, LEMON parser — all real); spot-check citation exactness 3/8 — misses are in-chunk region confusion (~1–3k lines off), not number corruption |
 | T6 | Binary `.whl` (negative test) | 15 KB | — | — | Live MCP server | <1 s | ✅ Clean rejection: binary files never sent to the LLM |
+
+> **Citation precision vs chunk size:** exact citations (T1–T4b) hold while whole constructs fit
+> comfortably in a chunk. On 14k-line chunks (T5b) the model occasionally cites a *real* line of
+> the right region but the wrong construct. For citation-critical workloads on huge files, lower
+> `SHUNT_CHUNK_CHARS` (e.g. `300000` ≈ 7k-line chunks) to recover precision at the cost of more
+> quota waits.
 
 ## Findings
 
