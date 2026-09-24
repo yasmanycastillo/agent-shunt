@@ -589,8 +589,8 @@
         code: `# Codex CLI (OpenAI) — MCP servers live in config.toml\n[mcp_servers.model-shunt]\ncommand = "model-shunt"\nenv = { "SHUNT_PROVIDER" = "gemini", "SHUNT_MODEL" = "auto", "GEMINI_API_KEY" = "YOUR_API_KEY" }`
       },
       grok: {
-        file: "~/.grok/settings.json — mcpServers",
-        code: `\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n`
+        file: "~/.grok/config.toml — [mcp_servers.model-shunt]",
+        code: `# Grok reads MCP servers from ~/.grok/config.toml (TOML, not settings.json)\n[mcp_servers.model-shunt]\ncommand = "model-shunt"\nenabled = true\nenv = { SHUNT_PROVIDER = "gemini", SHUNT_MODEL = "auto", GEMINI_API_KEY = "\${GEMINI_API_KEY}" }\n\n# Same result from the CLI:\n# grok mcp add model-shunt -e SHUNT_PROVIDER=gemini -e SHUNT_MODEL=auto -e 'GEMINI_API_KEY=\${GEMINI_API_KEY}' -- model-shunt`
       },
             windsurf: {
         file: "~/.codeium/windsurf/mcp_config.json",
