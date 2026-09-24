@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "model-shunt"
-version = "1.2.0"
+version = "1.2.1"
 description = "Model routing for AI coding agents - delegate bulk file reading and boilerplate generation to fast, economical worker models via MCP. Zero dependencies."
 readme = "README.md"
 license = { file = "LICENSE" }
