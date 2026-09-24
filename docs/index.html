@@ -75,7 +75,7 @@
       <div class="flex items-center space-x-3">
         <span class="text-2xl">🔀</span>
         <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">Agent-Shunt</span>
-        <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 font-mono">v1.1</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 font-mono">v1.1.1</span>
       </div>
 
       <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
@@ -346,7 +346,7 @@
           </div>
           <h3 class="text-base font-semibold text-white mb-2">Zero Dependencies</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Written in pure Python 3 standard library. No pip install, no virtualenv, and no npm. Works instantly anywhere Python 3.8+ is installed.
+            Written in pure Python 3 standard library. No pip install, no virtualenv, and no npm. Works instantly anywhere Python 3.9+ is installed.
           </p>
         </div>
 
@@ -471,19 +471,19 @@
     const snippets = {
       antigravity: {
         file: "antigravity.json / MCP Settings",
-        code: `{\n  "mcpServers": {\n    "agent-shunt": {\n      "command": "python3",\n      "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
+        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
       },
       cursor: {
         file: ".cursor/mcp.json or Cursor MCP Settings",
-        code: `{\n  "mcpServers": {\n    "agent-shunt": {\n      "command": "python3",\n      "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
+        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
       },
       claude: {
-        file: "Install as local plugin",
-        code: `# 1. Install local plugin into Claude Code\nclaude plugin install /absolute/path/to/agent-shunt/plugin\n\n# 2. Or run CLI directly in your terminal\n./plugin/scripts/bulk-read --question "How are tokens handled?" --paths src/auth.ts --auto-model`
+        file: "Install via plugin marketplace / mcp add",
+        code: `# 1. Install as Claude Code plugin (hooks + skills + MCP server)\n/plugin marketplace add yasmanycastillo/agent-shunt\n/plugin install shunt@model-shunt\n\n# 2. Or register just the MCP server\nclaude mcp add model-shunt -- uvx model-shunt`
       },
       windsurf: {
         file: "~/.codeium/windsurf/mcp_config.json",
-        code: `{\n  "mcpServers": {\n    "agent-shunt": {\n      "command": "python3",\n      "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"],\n      "env": {\n        "SHUNT_PROVIDER": "groq",\n        "SHUNT_MODEL": "auto",\n        "GROQ_API_KEY": "YOUR_GROQ_API_KEY"\n      }\n    }\n  }\n}`
+        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "groq",\n        "SHUNT_MODEL": "auto",\n        "GROQ_API_KEY": "YOUR_GROQ_API_KEY"\n      }\n    }\n  }\n}`
       }
     };
 
