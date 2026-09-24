@@ -561,11 +561,11 @@
     const snippets = {
       antigravity: {
         file: "antigravity.json / MCP Settings",
-        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
+        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",  // after install.sh (or: uvx model-shunt)\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
       },
       cursor: {
         file: ".cursor/mcp.json or Cursor MCP Settings",
-        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
+        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",  // after install.sh (or: uvx model-shunt)\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
       },
       claude: {
         file: "Universal installer / plugin marketplace",
@@ -573,7 +573,7 @@
       },
       windsurf: {
         file: "~/.codeium/windsurf/mcp_config.json",
-        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "groq",\n        "SHUNT_MODEL": "auto",\n        "GROQ_API_KEY": "YOUR_GROQ_API_KEY"\n      }\n    }\n  }\n}`
+        code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",  // after install.sh (or: uvx model-shunt)\n      "env": {\n        "SHUNT_PROVIDER": "groq",\n        "SHUNT_MODEL": "auto",\n        "GROQ_API_KEY": "YOUR_GROQ_API_KEY"\n      }\n    }\n  }\n}`
       }
     };
 
