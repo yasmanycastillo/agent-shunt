@@ -568,8 +568,8 @@
         code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "uvx",\n      "args": ["model-shunt"],\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
       },
       claude: {
-        file: "Install via plugin marketplace / mcp add",
-        code: `# 1. Install as Claude Code plugin (hooks + skills + MCP server)\n/plugin marketplace add yasmanycastillo/model-shunt\n/plugin install shunt@model-shunt\n\n# 2. Or register just the MCP server\nclaude mcp add model-shunt -- uvx model-shunt`
+        file: "Universal installer / plugin marketplace",
+        code: `# 1. One-liner: detects uv/pip/npm, installs model-shunt, registers with Claude Code\ncurl -fsSL https://yasmanycastillo.github.io/model-shunt/install.sh | bash\n\n# 2. Or install as Claude Code plugin (hooks + skills + MCP server)\n/plugin marketplace add yasmanycastillo/model-shunt\n/plugin install shunt@model-shunt`
       },
       windsurf: {
         file: "~/.codeium/windsurf/mcp_config.json",

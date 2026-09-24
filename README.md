@@ -104,10 +104,15 @@ Model-Shunt provides a standard stdio MCP server exposing three tools:
 
 MCP Registry name: `mcp-name: io.github.yasmanycastillo/model-shunt`
 
-**Claude Code (one-liner):**
+**Universal one-liner** (detects uv / pip / pipx / npm, installs the `model-shunt` command, and registers it with Claude Code if present):
 ```bash
-claude mcp add model-shunt -- uvx model-shunt
-# Node users: claude mcp add model-shunt -- npx -y model-shunt
+curl -fsSL https://yasmanycastillo.github.io/model-shunt/install.sh | bash
+```
+
+**Manual alternatives:**
+```bash
+claude mcp add model-shunt -- uvx model-shunt      # if you have uv
+claude mcp add model-shunt -- npx -y model-shunt   # if you have Node + Python
 ```
 
 **Any MCP client** (Cursor, Windsurf, Antigravity, Claude Desktop, etc.) — add to its MCP settings. No clone, no absolute paths:
