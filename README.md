@@ -103,25 +103,20 @@ Model-Shunt provides a standard stdio MCP server exposing three tools:
 
 MCP Registry name: `mcp-name: io.github.yasmanycastillo/model-shunt`
 
-**Via npx (no clone needed, requires Python 3.9+ on PATH):**
-```bash
-claude mcp add model-shunt -- npx -y model-shunt
-```
-
-**Via uvx / pip (no Node required):**
+**Claude Code (one-liner):**
 ```bash
 claude mcp add model-shunt -- uvx model-shunt
+# Node users: claude mcp add model-shunt -- npx -y model-shunt
 ```
 
-#### Client Configuration (from a clone):
-Add to your agent's MCP settings (e.g., `claude_desktop_config.json`, Cursor MCP settings, or Antigravity config):
+**Any MCP client** (Cursor, Windsurf, Antigravity, Claude Desktop, etc.) — add to its MCP settings. No clone, no absolute paths:
 
 ```json
 {
   "mcpServers": {
     "model-shunt": {
-      "command": "python3",
-      "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"],
+      "command": "uvx",
+      "args": ["model-shunt"],
       "env": {
         "SHUNT_PROVIDER": "gemini",
         "SHUNT_MODEL": "auto",
@@ -131,6 +126,8 @@ Add to your agent's MCP settings (e.g., `claude_desktop_config.json`, Cursor MCP
   }
 }
 ```
+
+> **Fallback (offline / no uv / no npx):** run straight from a clone with Python 3.9+ — replace `"command"`/`"args"` with `"command": "python3", "args": ["/absolute/path/to/model-shunt/src/model_shunt/server.py"]`.
 
 > **Security:** by default `bulk_read`/`code_write` only operate on files inside the server's working directory (the agent workspace). Set `SHUNT_ALLOWED_ROOTS` (PATH-style list) to expand the sandbox.
 
