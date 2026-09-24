@@ -10,3 +10,5 @@ dist/
 node_modules/
 .claude/
 brag-output/
+bench-mcp.py
+bench-out-*.txt

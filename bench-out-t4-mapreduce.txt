@@ -1,2 +1,0 @@
-[model-shunt] Corpus exceeds direct limit (1286293 est. tokens); map-reduce over 9 chunks of ~600000 chars
-[model-shunt] Rate limit hit (chunk 1/3); waiting 65s for quota window
