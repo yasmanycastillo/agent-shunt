@@ -391,7 +391,10 @@
 
       <!-- Agent Tabs -->
       <div class="flex justify-center flex-wrap gap-2 mb-6" id="agentTabs">
-        <button onclick="switchTab('antigravity')" id="tab-antigravity" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-brand-500 text-black font-semibold">
+        <button onclick="switchTab('universal')" id="tab-universal" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-brand-500 text-black font-semibold">
+          ⚡ Universal
+        </button>
+        <button onclick="switchTab('antigravity')" id="tab-antigravity" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
           Antigravity
         </button>
         <button onclick="switchTab('cursor')" id="tab-cursor" class="tab-btn px-4 py-2 rounded-lg text-xs font-mono font-medium transition-all bg-slate-800 text-slate-300 hover:text-white">
@@ -567,9 +570,13 @@
         file: ".cursor/mcp.json or Cursor MCP Settings",
         code: `{\n  "mcpServers": {\n    "model-shunt": {\n      "command": "model-shunt",  // after install.sh (or: uvx model-shunt)\n      "env": {\n        "SHUNT_PROVIDER": "gemini",\n        "SHUNT_MODEL": "auto",\n        "GEMINI_API_KEY": "YOUR_API_KEY"\n      }\n    }\n  }\n}`
       },
+      universal: {
+        file: "Works on any machine with Python 3.9+ (uv / pip / pipx / npm auto-detected)",
+        code: `# One-liner — installs the model-shunt command and registers it with Claude Code if found\ncurl -fsSL https://yasmanycastillo.github.io/model-shunt/install.sh | bash\n\n# After that, ANY MCP client just needs:\n{\n  "mcpServers": {\n    "model-shunt": { "command": "model-shunt" }\n  }\n}\n\n# No curl? Manual equivalents:\n#   claude mcp add model-shunt -- uvx model-shunt      # uv\n#   claude mcp add model-shunt -- npx -y model-shunt   # Node + Python`
+      },
       claude: {
-        file: "Universal installer / plugin marketplace",
-        code: `# 1. One-liner: detects uv/pip/npm, installs model-shunt, registers with Claude Code\ncurl -fsSL https://yasmanycastillo.github.io/model-shunt/install.sh | bash\n\n# 2. Or install as Claude Code plugin (hooks + skills + MCP server)\n/plugin marketplace add yasmanycastillo/model-shunt\n/plugin install shunt@model-shunt`
+        file: "Claude Code plugin (hooks + skills + MCP server)",
+        code: `# Install as Claude Code plugin — PreToolUse hooks + skills + MCP server in one\n/plugin marketplace add yasmanycastillo/model-shunt\n/plugin install shunt@model-shunt\n\n# Or register only the MCP server (if you ran install.sh, it is already done)\nclaude mcp add model-shunt -- model-shunt`
       },
       windsurf: {
         file: "~/.codeium/windsurf/mcp_config.json",
@@ -602,7 +609,7 @@
     }
 
     // Initialize default tab
-    switchTab('antigravity');
+    switchTab('universal');
   </script>
 </body>
 </html>
