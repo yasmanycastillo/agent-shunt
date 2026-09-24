@@ -10,8 +10,9 @@ September 23, 2026. Worker: `gemini-2.5-flash` (free tier, `SHUNT_MODEL=auto`).
 | T1 | mypy `checker.py` | 446 KB | ~12,000 | ~111k | MCP server (stdio JSON-RPC) | 10.8 s | ✅ 8/9 line citations exact, 1 within ±2 lines (same import block) |
 | T2 | Odoo `test_swissdec_cases.py` | 541 KB | 2,974 | ~135k | CLI (`bulk-read`) | 12.2 s | ✅ All cited test-method lines exact (L1508, L1551, L1626…) |
 | T3 | npm registry `d3` metadata — **one single 733 KB line** | 733 KB | 1 | ~183k | CLI | 8.3 s | ✅ **100% ground truth**: latest 7.9.0 ✓, license ISC ✓, all 30/30 deps exact set match |
-| T4 | Kubernetes OpenAPI `swagger.json` | 4.5 MB | 110,426 | ~1.12M | CLI | 17.4 s (retries) | ❌ HTTP 429 — exceeds free-tier tokens-per-minute quota |
-| T5 | SQLite amalgamation `sqlite3.c` | 9 MB | 255,680 | ~2.25M | CLI | 21.4 s (retries) | ❌ HTTP 429 — exceeds free-tier tokens-per-minute quota |
+| T4 | Kubernetes OpenAPI `swagger.json` | 4.5 MB | 110,426 | ~1.29M | CLI (v1.1.3, direct) | 17.4 s (retries) | ❌ HTTP 429 — exceeds free-tier tokens-per-minute quota |
+| T4b | Same `swagger.json` — **map-reduce (v1.2.0)** | 4.5 MB | 110,426 | ~1.29M | CLI, 9 chunks | ~2.5 min (1 quota wait) | ✅ **4/4 claims verified 100%**: `required: [schedule, jobTemplate]` at exact lines N\|4690/N\|4691, group `batch` N\|60211, `swagger: 2.0` N\|110425 |
+| T5 | SQLite amalgamation `sqlite3.c` | 9 MB | 255,680 | ~2.25M | CLI | 21.4 s (retries) | ❌ HTTP 429 — exceeds free-tier tokens-per-minute quota (map-reduce removes this; ~16 chunks on free tier) |
 | T6 | Binary `.whl` (negative test) | 15 KB | — | — | Live MCP server | <1 s | ✅ Clean rejection: binary files never sent to the LLM |
 
 ## Findings
