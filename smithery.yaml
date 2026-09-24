@@ -1,0 +1,29 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      shuntProvider:
+        type: string
+        description: "Worker provider: gemini, openai, groq, deepseek, anthropic, openrouter, or ollama"
+        default: "gemini"
+      shuntModel:
+        type: string
+        description: "Worker model override, or 'auto' to pick the best model per task"
+      shuntApiKey:
+        type: string
+        description: "API key for the worker provider (provider-specific keys like GEMINI_API_KEY also work)"
+      shuntAllowedRoots:
+        type: string
+        description: "PATH-style list of directories bulk_read/code_write may touch"
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'model-shunt'],
+      env: {
+        ...(config.shuntProvider ? { SHUNT_PROVIDER: config.shuntProvider } : {}),
+        ...(config.shuntModel ? { SHUNT_MODEL: config.shuntModel } : {}),
+        ...(config.shuntApiKey ? { SHUNT_API_KEY: config.shuntApiKey } : {}),
+        ...(config.shuntAllowedRoots ? { SHUNT_ALLOWED_ROOTS: config.shuntAllowedRoots } : {})
+      }
+    })
